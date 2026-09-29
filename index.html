@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Recursion Lab</title>
+    <!-- استدعاء ملف التصميم -->
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- تعريف الأيقونات (SVG Defs) -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-logo" viewBox="0 0 24 24">
+          <circle cx="12" cy="5" r="2.6" />
+          <circle cx="6" cy="18" r="2.6" />
+          <circle cx="18" cy="18" r="2.6" />
+          <path d="M12 7.6v4M12 11.6 7 15.6M12 11.6l5 4" />
+        </symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </symbol>
+        <symbol id="i-hanoi" viewBox="0 0 24 24">
+          <path d="M3 21h18M6 21V9M12 21V5M18 21V11" />
+          <rect x="3.5" y="17" width="5" height="2.6" rx="1.3" />
+          <rect x="4.6" y="13.6" width="2.8" height="2.6" rx="1.3" />
+          <rect x="15.5" y="17" width="5" height="2.6" rx="1.3" />
+        </symbol>
+        <symbol id="i-fact" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v6.2M12 16.6v.1" />
+        </symbol>
+        <symbol id="i-fib" viewBox="0 0 24 24">
+          <path
+            d="M14.5 12.5a2 2 0 0 0-2-2 3.5 3.5 0 0 0-3.5 3.5 5.5 5.5 0 0 0 5.5 5.5 8.5 8.5 0 0 0 8.5-8.5"
+          />
+          <rect x="3" y="3" width="18" height="18" rx="4" opacity=".45" />
+        </symbol>
+        <symbol id="i-fn" viewBox="0 0 24 24">
+          <path
+            d="M15 4.6c-2.3-.6-3.7.6-4.1 2.6L9.2 17.4c-.4 2.2-1.6 3.1-3.7 2.6M6.8 10h8"
+          />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14" />
+        </symbol>
+        <symbol id="i-play" viewBox="0 0 24 24">
+          <path d="M8 5.5v13l11-6.5z" fill="currentColor" />
+        </symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24">
+          <rect
+            x="6.5"
+            y="5"
+            width="3.6"
+            height="14"
+            rx="1"
+            fill="currentColor"
+          />
+          <rect
+            x="13.9"
+            y="5"
+            width="3.6"
+            height="14"
+            rx="1"
+            fill="currentColor"
+          />
+        </symbol>
+        <symbol id="i-next" viewBox="0 0 24 24">
+          <path d="M6 5.5v13l9-6.5z" fill="currentColor" />
+          <path d="M18 5.5v13" />
+        </symbol>
+        <symbol id="i-prev" viewBox="0 0 24 24">
+          <path d="M18 5.5v13l-9-6.5z" fill="currentColor" />
+          <path d="M6 5.5v13" />
+        </symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24">
+          <path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5" />
+        </symbol>
+        <symbol id="i-save" viewBox="0 0 24 24">
+          <path d="M5 4h11l3 3v13H5z" />
+          <path d="M8 4v5h7V4M8 20v-6h8v6" />
+        </symbol>
+        <symbol id="i-x" viewBox="0 0 24 24">
+          <path d="M6 6l12 12M18 6 6 18" />
+        </symbol>
+        <symbol id="i-sun" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4" />
+          <path
+            d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"
+          />
+        </symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24">
+          <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
+        </symbol>
+        <symbol id="i-drop" viewBox="0 0 24 24">
+          <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />
+        </symbol>
+        <symbol id="i-info" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 10.5v6M12 7.4v.2" />
+        </symbol>
+        <symbol id="i-code" viewBox="0 0 24 24">
+          <path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- شريط الهاتف المحمول -->
+    <div id="mob-bar">
+      <button id="menuBtn" aria-label="Menu">
+        <svg class="ic"><use href="#i-menu" /></svg>
+      </button>
+      <div class="brand">
+        <svg class="ic ic-lg"><use href="#i-logo" /></svg> Recursion Lab
+      </div>
+    </div>
+    <div id="side-overlay"></div>
+
+    <!-- القائمة الجانبية -->
+    <aside id="side">
+      <div class="brand">Recursion Lab</div>
+      <div class="sec">Add algorithm</div>
+      <a data-p="new"
+        ><svg class="ic ic-lg"><use href="#i-fn" /></svg
+        ><span>New algorithm</span></a
+      >
+      <div id="mine"></div>
+      <div class="sec">Ready-made algorithms</div>
+      <a data-p="hanoi"
+        ><svg class="ic ic-lg"><use href="#i-hanoi" /></svg
+        ><span>Tower of Hanoi</span></a
+      >
+      <a data-p="fact"
+        ><svg class="ic ic-lg"><use href="#i-fact" /></svg
+        ><span>Factorial</span></a
+      >
+      <a data-p="fib"
+        ><svg class="ic ic-lg"><use href="#i-fib" /></svg
+        ><span>Fibonacci</span></a
+      >
+      <div class="setg">
+        <label class="gl"
+          ><svg class="ic"><use href="#i-drop" /></svg> Glass
+          <input
+            id="gla"
+            type="range"
+            min="0.2"
+            max="1"
+            step="0.02"
+            value="0.6"
+        /></label>
+        <button id="thm"></button>
+        <div id="aboutDev">
+          <button id="devInfo" type="button">
+            <svg class="ic"><use href="#i-info" /></svg
+            ><span>About the developer</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- النافذة المنبثقة (Modal) -->
+    <div id="devModal" class="dev-modal" aria-hidden="true">
+      <div
+        class="dev-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="devTitle"
+      >
+        <div class="dev-head">
+          <svg class="ic ic-lg"><use href="#i-code" /></svg>
+          <h2 id="devTitle">Developer</h2>
+          <button
+            id="devClose"
+            class="dev-close"
+            type="button"
+            aria-label="Close"
+          >
+            <svg class="ic"><use href="#i-x" /></svg>
+          </button>
+        </div>
+        <div class="dev-body">
+          <svg class="dev-icon"><use href="#i-logo" /></svg>
+          <p>All Rights Reserved</p>
+          <strong>Eng. Alhussin Rastanawi</strong>
+          <p>Recursion Lab</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <main>
+      <section id="pg-hanoi" class="pg on">
+        <div class="bar">
+          <h1>
+            <svg class="ic ic-lg"><use href="#i-hanoi" /></svg> Tower of Hanoi
+          </h1>
+          <label
+            >Disks <input id="n" type="number" min="1" max="7" value="3"
+          /></label>
+          <button id="rs">
+            <svg class="ic"><use href="#i-refresh" /></svg> Reset
+          </button>
+          <button id="bk">
+            <svg class="ic"><use href="#i-prev" /></svg> Step
+          </button>
+          <button id="pl" class="p">
+            <svg class="ic"><use href="#i-play" /></svg> Play
+          </button>
+          <button id="fw">
+            Step <svg class="ic"><use href="#i-next" /></svg>
+          </button>
+          <label
+            >Speed
+            <input
+              id="sp"
+              type="range"
+              min="0.25"
+              max="4"
+              step="0.25"
+              value="1"
+          /></label>
+          <span id="cnt" style="color: var(--mut)"></span>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h2>
+              Towers – peg roles for the current call · faded disks are outside
+              the subproblem (dashed box)
+            </h2>
+            <div id="sub"></div>
+            <div id="stage"></div>
+            <div id="rb"></div>
+          </div>
+          <div class="card">
+            <h2>Call tree (left → right = order of disk moves)</h2>
+            <div id="treebox"><svg id="tree"></svg></div>
+            <div class="leg">
+              <span><i style="background: var(--pend)"></i>Not called yet</span
+              ><span><i style="background: var(--act)"></i>Current call</span
+              ><span
+                ><i style="background: var(--rel)"></i>Related (call
+                stack)</span
+              ><span><i style="background: var(--done)"></i>Finished</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>
+              Call stack – each subproblem with its roles (S source / T temp / D
+              destination)
+            </h2>
+            <div id="stack"></div>
+          </div>
+          <div class="card">
+            <h2>Step log (click any step to jump to it)</h2>
+            <div id="log"></div>
+          </div>
+        </div>
+      </section>
+      <section id="pg-gen" class="pg">
+        <div class="bar">
+          <h1 id="gTitle"></h1>
+          <button id="gRun" class="p">
+            <svg class="ic"><use href="#i-refresh" /></svg> Run
+          </button>
+          <button id="gSave">
+            <svg class="ic"><use href="#i-save" /></svg> Save as new
+          </button>
+          <button id="gBk">
+            <svg class="ic"><use href="#i-prev" /></svg> Step
+          </button>
+          <button id="gPl" class="p">
+            <svg class="ic"><use href="#i-play" /></svg> Play
+          </button>
+          <button id="gFw">
+            Step <svg class="ic"><use href="#i-next" /></svg>
+          </button>
+          <label
+            >Speed
+            <input
+              id="gSpd"
+              type="range"
+              min="0.25"
+              max="4"
+              step="0.25"
+              value="1"
+          /></label>
+          <span id="gCnt" style="color: var(--mut)"></span>
+        </div>
+        <div class="grid">
+          <div class="card full">
+            <h2 id="gDesc"></h2>
+            <textarea id="gCode" spellcheck="false" rows="4"></textarea>
+            <div class="row">
+              <label
+                >Call:
+                <input
+                  id="gCall"
+                  style="
+                    width: 260px;
+                    font-family: ui-monospace, Consolas, monospace;
+                  "
+                  spellcheck="false" /></label
+              ><span id="gErr" style="color: var(--D)"></span>
+            </div>
+          </div>
+          <div class="card full">
+            <h2>
+              Call tree – each node shows its full arguments, return values
+              appear under it
+            </h2>
+            <div id="gInfo"></div>
+            <div id="gTB" class="tb"><svg id="gTree"></svg></div>
+            <div class="leg">
+              <span><i style="background: var(--pend)"></i>Not called yet</span
+              ><span><i style="background: var(--act)"></i>Current call</span
+              ><span
+                ><i style="background: var(--rel)"></i>Related (call
+                stack)</span
+              ><span><i style="background: var(--done)"></i>Finished</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Call stack</h2>
+            <div id="gStack" class="stk"></div>
+          </div>
+          <div class="card">
+            <h2>Call statistics (repeated calls are highlighted)</h2>
+            <div id="gStat"></div>
+          </div>
+          <div class="card">
+            <h2>Step log (click any step to jump to it)</h2>
+            <div id="gLog" class="lgb"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- استدعاء ملف الجافاسكربت -->
+    <script src="js/main.js"></script>
+  </body>
+</html>
