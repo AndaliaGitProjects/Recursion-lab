@@ -7,11 +7,9 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Recursion Lab</title>
-    <!-- استدعاء ملف التصميم -->
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- تعريف الأيقونات (SVG Defs) -->
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
       <defs>
         <symbol id="i-logo" viewBox="0 0 24 24">
@@ -105,10 +103,28 @@
         <symbol id="i-code" viewBox="0 0 24 24">
           <path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" />
         </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="M16 16l4.5 4.5" />
+        </symbol>
+        <symbol id="i-grip" viewBox="0 0 24 24">
+          <path
+            d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01"
+            stroke-width="3.4"
+          />
+        </symbol>
+        <symbol id="i-gear" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"
+          />
+        </symbol>
+        <symbol id="i-chev" viewBox="0 0 24 24">
+          <path d="M6 9l6 6 6-6" />
+        </symbol>
       </defs>
     </svg>
 
-    <!-- شريط الهاتف المحمول -->
     <div id="mob-bar">
       <button id="menuBtn" aria-label="Menu">
         <svg class="ic"><use href="#i-menu" /></svg>
@@ -119,7 +135,6 @@
     </div>
     <div id="side-overlay"></div>
 
-    <!-- القائمة الجانبية -->
     <aside id="side">
       <div class="brand">Recursion Lab</div>
       <div class="sec">Add algorithm</div>
@@ -127,32 +142,99 @@
         ><svg class="ic ic-lg"><use href="#i-fn" /></svg
         ><span>New algorithm</span></a
       >
+      <div id="mineBar" class="mbar">
+        <button id="mHide" title="Hide saved functions">Hide all</button
+        ><button id="mShow" title="Show saved functions">Show all</button
+        ><button id="mDel" title="Delete all saved functions">
+          Delete all
+        </button>
+      </div>
       <div id="mine"></div>
       <div class="sec">Ready-made algorithms</div>
-      <a data-p="hanoi"
-        ><svg class="ic ic-lg"><use href="#i-hanoi" /></svg
-        ><span>Tower of Hanoi</span></a
-      >
-      <a data-p="fact"
-        ><svg class="ic ic-lg"><use href="#i-fact" /></svg
-        ><span>Factorial</span></a
-      >
-      <a data-p="fib"
-        ><svg class="ic ic-lg"><use href="#i-fib" /></svg
-        ><span>Fibonacci</span></a
-      >
+      <div id="ready"></div>
       <div class="setg">
-        <label class="gl"
-          ><svg class="ic"><use href="#i-drop" /></svg> Glass
-          <input
-            id="gla"
-            type="range"
-            min="0.2"
-            max="1"
-            step="0.02"
-            value="0.6"
-        /></label>
-        <button id="thm"></button>
+        <div class="sc" id="sCard">
+          <button id="sTog" class="sh keep" type="button">
+            <svg class="ic"><use href="#i-gear" /></svg><span>Settings</span
+            ><svg class="ic chev"><use href="#i-chev" /></svg>
+          </button>
+          <div id="sBody">
+            <div>
+              <div class="sr">
+                <label>Theme</label>
+                <div class="seg" id="segTh">
+                  <button class="keep" data-t="light">
+                    <svg class="ic"><use href="#i-sun" /></svg> Light</button
+                  ><button class="keep" data-t="dark">
+                    <svg class="ic"><use href="#i-moon" /></svg> Dark
+                  </button>
+                </div>
+              </div>
+              <div class="sr">
+                <label>Glass <output id="glv"></output></label
+                ><input
+                  id="gla"
+                  type="range"
+                  min="0.2"
+                  max="1"
+                  step="0.02"
+                  value="0.6"
+                />
+              </div>
+              <div class="sr">
+                <label>Corner shape</label>
+                <div class="seg" id="segCo">
+                  <button class="keep" data-c="sharp">
+                    <i class="cs" style="border-radius: 0"></i> Sharp</button
+                  ><button class="keep" data-c="soft">
+                    <i class="cs" style="border-radius: 4px 0 0 0"></i>
+                    Soft</button
+                  ><button class="keep" data-c="round">
+                    <i class="cs" style="border-radius: 10px 0 0 0"></i>
+                    Round</button
+                  ><button class="keep" data-c="squircle">
+                    <i class="cs" style="border-radius: 7px 0 0 0"></i> Squircle
+                  </button>
+                </div>
+              </div>
+              <div class="sr">
+                <label>Accent</label>
+                <div class="sw" id="swA">
+                  <button
+                    class="keep"
+                    data-c="blue"
+                    style="--c: #5b8def"
+                    title="Blue"
+                  ></button
+                  ><button
+                    class="keep"
+                    data-c="violet"
+                    style="--c: #8b6cf0"
+                    title="Violet"
+                  ></button
+                  ><button
+                    class="keep"
+                    data-c="cyan"
+                    style="--c: #22b8cf"
+                    title="Cyan"
+                  ></button
+                  ><button
+                    class="keep"
+                    data-c="pink"
+                    style="--c: #e5609c"
+                    title="Pink"
+                  ></button
+                  ><button
+                    class="keep"
+                    data-c="slate"
+                    style="--c: #6b7a99"
+                    title="Slate"
+                  ></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div id="aboutDev">
           <button id="devInfo" type="button">
             <svg class="ic"><use href="#i-info" /></svg
@@ -161,8 +243,6 @@
         </div>
       </div>
     </aside>
-
-    <!-- النافذة المنبثقة (Modal) -->
     <div id="devModal" class="dev-modal" aria-hidden="true">
       <div
         class="dev-dialog"
@@ -184,45 +264,51 @@
         </div>
         <div class="dev-body">
           <svg class="dev-icon"><use href="#i-logo" /></svg>
-          <p>All Rights Reserved</p>
+          <p>جميع الحقوق محفوظة للمطور</p>
           <strong>Eng. Alhussin Rastanawi</strong>
           <p>Recursion Lab</p>
         </div>
       </div>
     </div>
 
-    <!-- المحتوى الرئيسي -->
     <main>
       <section id="pg-hanoi" class="pg on">
         <div class="bar">
           <h1>
-            <svg class="ic ic-lg"><use href="#i-hanoi" /></svg> Tower of Hanoi
+            <svg class="ic ic-lg"><use href="#i-hanoi" /></svg>
+            <span id="tH">Tower of Hanoi</span>
           </h1>
-          <label
-            >Disks <input id="n" type="number" min="1" max="7" value="3"
-          /></label>
-          <button id="rs">
-            <svg class="ic"><use href="#i-refresh" /></svg> Reset
-          </button>
-          <button id="bk">
-            <svg class="ic"><use href="#i-prev" /></svg> Step
-          </button>
-          <button id="pl" class="p">
-            <svg class="ic"><use href="#i-play" /></svg> Play
-          </button>
-          <button id="fw">
-            Step <svg class="ic"><use href="#i-next" /></svg>
-          </button>
-          <label
-            >Speed
-            <input
-              id="sp"
-              type="range"
-              min="0.25"
-              max="4"
-              step="0.25"
-              value="1"
-          /></label>
+          <div class="bgrp">
+            <div class="bgt">Animation setting</div>
+            <div class="bgr">
+              <button id="rs" class="p">
+                <svg class="ic"><use href="#i-refresh" /></svg> Reset</button
+              ><button id="bk">
+                <svg class="ic"><use href="#i-prev" /></svg> Step</button
+              ><button id="pl" class="p">
+                <svg class="ic"><use href="#i-play" /></svg> Play</button
+              ><button id="fw">
+                Step <svg class="ic"><use href="#i-next" /></svg></button
+              ><label
+                >Speed
+                <input
+                  id="sp"
+                  type="range"
+                  min="0.25"
+                  max="4"
+                  step="0.25"
+                  value="1"
+              /></label>
+            </div>
+          </div>
+          <div class="bgrp">
+            <div class="bgt">Variables</div>
+            <div class="bgr">
+              <label
+                >Disks <input id="n" type="number" min="1" max="7" value="3"
+              /></label>
+            </div>
+          </div>
           <span id="cnt" style="color: var(--mut)"></span>
         </div>
         <div class="grid">
@@ -260,34 +346,115 @@
           </div>
         </div>
       </section>
+      <section id="pg-bs" class="pg">
+        <div class="bar">
+          <h1>
+            <svg class="ic ic-lg"><use href="#i-search" /></svg>
+            <span id="tB">Binary Search</span>
+          </h1>
+          <div class="bgrp">
+            <div class="bgt">Animation setting</div>
+            <div class="bgr">
+              <button id="bRs" class="p">
+                <svg class="ic"><use href="#i-refresh" /></svg> Reset</button
+              ><button id="bBk">
+                <svg class="ic"><use href="#i-prev" /></svg> Step</button
+              ><button id="bPl" class="p">
+                <svg class="ic"><use href="#i-play" /></svg> Play</button
+              ><button id="bFw">
+                Step <svg class="ic"><use href="#i-next" /></svg></button
+              ><label
+                >Speed
+                <input
+                  id="bSp"
+                  type="range"
+                  min="0.25"
+                  max="4"
+                  step="0.25"
+                  value="1"
+              /></label>
+            </div>
+          </div>
+          <div class="bgrp">
+            <div class="bgt">Variables</div>
+            <div class="bgr">
+              <label
+                >Array
+                <input
+                  id="bArr"
+                  style="width: 210px; max-width: 100%"
+                  spellcheck="false" /></label
+              ><label>Target <input id="bTgt" type="number" /></label>
+            </div>
+          </div>
+          <span id="bCnt" style="color: var(--mut)"></span
+          ><span id="bErr" style="color: var(--D)"></span>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h2>Array – faded cells are outside the current search range</h2>
+            <div id="bInfo"></div>
+            <div id="bStage"><div id="bCells" class="bcells"></div></div>
+            <div id="bRb"></div>
+            <div class="leg">
+              <span><i style="background: var(--S)"></i>L = low</span
+              ><span><i style="background: var(--T)"></i>M = mid</span
+              ><span><i style="background: var(--D)"></i>H = high</span
+              ><span><i style="background: var(--done)"></i>Found</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>
+              Call tree (left = search left half, right = search right half)
+            </h2>
+            <div id="bTB" class="tb"><svg id="bTree"></svg></div>
+            <div class="leg">
+              <span><i style="background: var(--pend)"></i>Not called yet</span
+              ><span><i style="background: var(--act)"></i>Current call</span
+              ><span
+                ><i style="background: var(--rel)"></i>Related (call
+                stack)</span
+              ><span><i style="background: var(--done)"></i>Finished</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Call stack</h2>
+            <div id="bStack" class="stk"></div>
+          </div>
+          <div class="card">
+            <h2>Step log (click any step to jump to it)</h2>
+            <div id="bLog" class="lgb"></div>
+          </div>
+        </div>
+      </section>
       <section id="pg-gen" class="pg">
         <div class="bar">
           <h1 id="gTitle"></h1>
-          <button id="gRun" class="p">
-            <svg class="ic"><use href="#i-refresh" /></svg> Run
-          </button>
-          <button id="gSave">
-            <svg class="ic"><use href="#i-save" /></svg> Save as new
-          </button>
-          <button id="gBk">
-            <svg class="ic"><use href="#i-prev" /></svg> Step
-          </button>
-          <button id="gPl" class="p">
-            <svg class="ic"><use href="#i-play" /></svg> Play
-          </button>
-          <button id="gFw">
-            Step <svg class="ic"><use href="#i-next" /></svg>
-          </button>
-          <label
-            >Speed
-            <input
-              id="gSpd"
-              type="range"
-              min="0.25"
-              max="4"
-              step="0.25"
-              value="1"
-          /></label>
+          <div class="bgrp">
+            <div class="bgt">Animation setting</div>
+            <div class="bgr">
+              <button id="gRun" class="p">
+                <svg class="ic"><use href="#i-refresh" /></svg> Run</button
+              ><button id="gSave">
+                <svg class="ic"><use href="#i-save" /></svg> Save as new</button
+              ><button id="gBk">
+                <svg class="ic"><use href="#i-prev" /></svg> Step</button
+              ><button id="gPl" class="p">
+                <svg class="ic"><use href="#i-play" /></svg> Play</button
+              ><button id="gFw">
+                Step <svg class="ic"><use href="#i-next" /></svg></button
+              ><label
+                >Speed
+                <input
+                  id="gSpd"
+                  type="range"
+                  min="0.25"
+                  max="4"
+                  step="0.25"
+                  value="1"
+              /></label>
+            </div>
+          </div>
           <span id="gCnt" style="color: var(--mut)"></span>
         </div>
         <div class="grid">
@@ -338,8 +505,6 @@
         </div>
       </section>
     </main>
-
-    <!-- استدعاء ملف الجافاسكربت -->
-    <script src="js/main.js"></script>
+    <script src="script.js"></script>
   </body>
 </html>

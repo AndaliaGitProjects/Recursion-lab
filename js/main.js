@@ -1,4 +1,3 @@
-/* js/main.js */
 const ic = (n, c) =>
   `<svg class="ic${c ? " " + c : ""}"><use href="#i-${n}"/></svg>`
 let ST = {
@@ -10,10 +9,21 @@ let ST = {
   gs: 1,
   hstep: 0,
   dr: {},
+  bs: { arr: "2, 5, 8, 12, 16, 23, 38, 56, 72, 91", t: "23", step: 0, sp: 1 },
+  names: {},
+  ord: { ready: null },
+  hideMine: false,
+  corner: "squircle",
+  accent: "blue",
+  setOpen: false,
 }
 try {
   Object.assign(ST, JSON.parse(localStorage.getItem("rl_state") || "{}"))
 } catch (e) {}
+if (ST.cv !== 2) {
+  ST.corner = "squircle"
+  ST.cv = 2
+}
 const SAVED = JSON.parse(JSON.stringify(ST))
 const persist = () => {
   try {
@@ -39,14 +49,26 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 /* Mobile Menu logic */
 const sideEl = $("side"),
   overlay = $("side-overlay")
-$("menuBtn").onclick = () => {
-  sideEl.classList.add("open")
-  overlay.classList.add("open")
+let sideT
+function sideSet(o) {
+  clearTimeout(sideT)
+  sideEl.classList.add("anim")
+  overlay.classList.add("anim")
+  sideEl.classList.toggle("open", o)
+  overlay.classList.toggle("open", o)
+  sideT = setTimeout(() => {
+    sideEl.classList.remove("anim")
+    overlay.classList.remove("anim")
+  }, 350)
 }
-overlay.onclick = () => {
-  sideEl.classList.remove("open")
-  overlay.classList.remove("open")
-}
+$("menuBtn").onclick = () => sideSet(true)
+overlay.onclick = () => sideSet(false)
+addEventListener("resize", () => {
+  if (innerWidth > 800 && sideEl.classList.contains("open")) {
+    sideEl.classList.remove("open")
+    overlay.classList.remove("open")
+  }
+})
 
 function build(n) {
   nodes = []
@@ -143,6 +165,7 @@ function place() {
   }
   e.pegs.forEach((pg, p) =>
     pg.forEach((k, lv) => {
+      if (disks[k].classList.contains("mv")) return
       disks[k].style.transition = "opacity .4s"
       const [x, y] = pos(p, lv, k)
       tf(k, x, y)
@@ -180,20 +203,21 @@ async function animMove(e, t) {
     el = disks[k],
     fromLv = ev[I - 1].pegs[e.from].length - 1,
     toLv = e.pegs[e.to].length - 1
-  const [x0, y0] = pos(e.from, fromLv, k),
-    [x1, y1] = pos(e.to, toLv, k),
+  const P0 = () => pos(e.from, fromLv, k),
+    P1 = () => pos(e.to, toLv, k),
     ty = 18,
     d = Math.max(90, 320 / speed)
   el.classList.add("mv")
-  const go = async (x, y) => {
+  const go = async (f) => {
+    const [x, y] = f()
     el.style.transition = `transform ${d}ms cubic-bezier(.45,.05,.3,1),opacity .4s`
     tf(k, x, y)
     await sleep(d)
     return t === tok
   }
-  if (!(await go(x0, ty))) return
-  if (!(await go(x1, ty))) return
-  await go(x1, y1)
+  if (!(await go(() => [P0()[0], ty]))) return
+  if (!(await go(() => [P1()[0], ty]))) return
+  await go(P1)
   el.classList.remove("mv")
 }
 /* ---------- roles ---------- */
@@ -358,15 +382,16 @@ let busy = false,
   loop = false,
   gPlay = false
 function uiLock() {
-  const lk = busy || loop || playing || gPlay
+  const lk = busy || loop || playing || gPlay || bPlay
   document.body.classList.toggle("locked", lk)
-  document.querySelectorAll("button,input[type=number]").forEach((b) => {
+  document.querySelectorAll("button,input[type=number],#bArr").forEach((b) => {
     b.disabled =
       lk &&
       !(
         (b.id === "pl" && playing) ||
+        (b.id === "bPl" && bPlay) ||
         (b.id === "gPl" && gPlay) ||
-        b.id === "thm"
+        b.classList.contains("keep")
       )
   })
 }
@@ -444,10 +469,10 @@ $("sp").oninput = (e) => {
   persist()
 }
 new ResizeObserver(() => {
-  if (!busy && ev && $("pg-hanoi").classList.contains("on")) {
-    place()
-    focus(ev[I].pegs, curNode(ev[I]))
-  }
+  if (!ev || !$("pg-hanoi").classList.contains("on")) return
+  place()
+  const e = ev[I]
+  focus(busy && e.type === "move" ? ev[I - 1].pegs : e.pegs, curNode(e))
 }).observe($("stage"))
 init()
 
@@ -455,13 +480,13 @@ init()
 const PRE = {
   fact: {
     t: "Factorial",
-    d: "n! = n × (n−1)!, with 0! = 1! = 1. One call per level: the stack grows to depth n, then the results multiply on the way back. Time O(n), stack depth O(n). Edit the call (e.g. fact(7)) and press Run.",
+    d: "n! = n × (n−1)!, with 0! = 1! = 1. One call per level: the stack grows to depth n, then the results multiply on the way back. Time O(n), stack depth O(n). Edit the call (e.g. fact(7)) and press Enter, or press Reset to restart.",
     code: "function fact(n) {\n  if (n <= 1) return 1;      // base case\n  return n * fact(n - 1);    // recursive case\n}",
     call: "fact(5)",
   },
   fib: {
     t: "Fibonacci",
-    d: "fib(n) = fib(n−1) + fib(n−2), with fib(0)=0 and fib(1)=1. Every call branches in two, so the same subproblems repeat (see Call statistics). Time O(2ⁿ), depth O(n). Edit the call (e.g. fib(6)) and press Run.",
+    d: "fib(n) = fib(n−1) + fib(n−2), with fib(0)=0 and fib(1)=1. Every call branches in two, so the same subproblems repeat (see Call statistics). Time O(2ⁿ), depth O(n). Edit the call (e.g. fib(6)) and press Enter, or press Reset to restart.",
     code: "function fib(n) {\n  if (n < 2) return n;                 // base cases\n  return fib(n - 1) + fib(n - 2);      // two recursive calls\n}",
     call: "fib(5)",
   },
@@ -515,25 +540,80 @@ const fmt = (v) => {
   return s.length > 200 ? s.slice(0, 199) + "…" : s
 }
 const lab = (n) => gName + "(" + n.args.map(fmt).join(", ") + ")"
+const RD = [
+  { p: "hanoi", i: "hanoi", n: "Tower of Hanoi" },
+  { p: "fact", i: "fact", n: "Factorial" },
+  { p: "fib", i: "fib", n: "Fibonacci" },
+  { p: "bsearch", i: "search", n: "Binary Search" },
+]
+const nameOf = (p) =>
+  ST.names[p] ||
+  (p[0] === "m"
+    ? (findM(+p.slice(1)) || {}).name
+    : (RD.find((r) => r.p === p) || {}).n) ||
+  (PRE[p] || {}).t ||
+  ""
+const readyList = () => {
+  const o = ST.ord.ready || []
+  return [
+    ...o.map((p) => RD.find((r) => r.p === p)).filter(Boolean),
+    ...RD.filter((r) => !o.includes(r.p)),
+  ]
+}
+const sItem = (p, ico, x = "") =>
+  `<a data-p="${p}"><b class="grip" title="Drag to reorder">${ic("grip")}</b>${ic(ico, "ic-lg")}<span>${esc(nameOf(p))}</span>${x}</a>`
 function side() {
+  $("ready").innerHTML = readyList()
+    .map((r) => sItem(r.p, r.i))
+    .join("")
   $("mine").innerHTML = mine
-    .map(
-      (m) =>
-        `<a data-p="m${m.id}">${ic("fn", "ic-lg")}<span>${esc(m.name)}</span><b class="x" data-x="${m.id}">${ic("x")}</b></a>`,
+    .map((m) =>
+      sItem("m" + m.id, "fn", `<b class="x" data-x="${m.id}">${ic("x")}</b>`),
     )
     .join("")
+  $("mine").style.display = ST.hideMine ? "none" : ""
+  $("mineBar").style.display = mine.length ? "" : "none"
+  $("mHide").style.display = ST.hideMine ? "none" : ""
+  $("mShow").style.display = ST.hideMine ? "" : "none"
+  $("mShow").textContent = "Show all (" + mine.length + ")"
+  $("tH").textContent = nameOf("hanoi")
+  $("tB").textContent = nameOf("bsearch")
   document
     .querySelectorAll("#side a")
     .forEach((a) => a.classList.toggle("on", a.dataset.p === curP))
 }
+const sLocked = () => busy || loop || playing || gPlay || bPlay
 $("side").onclick = (e) => {
-  if (busy || loop || playing || gPlay) return
+  if (sLocked()) return
+  if (e.target.closest(".grip,input")) return
+  const bt = e.target.closest("#mHide,#mShow,#mDel")
+  if (bt) {
+    if (bt.id === "mDel") {
+      if (!mine.length || !confirm("Delete all saved functions?")) return
+      mine.forEach((m) => {
+        delete ST.dr["m" + m.id]
+        delete ST.names["m" + m.id]
+      })
+      mine = []
+      saveMine()
+      persist()
+      if (curP[0] === "m") showPage("new")
+      else side()
+    } else {
+      ST.hideMine = bt.id === "mHide"
+      persist()
+      side()
+    }
+    return
+  }
   const x = e.target.closest(".x")
   if (x) {
     const id = +x.dataset.x
     mine = mine.filter((m) => m.id !== id)
     delete ST.dr["m" + id]
+    delete ST.names["m" + id]
     saveMine()
+    persist()
     e.stopPropagation()
     if (curP === "m" + id) showPage("new")
     else side()
@@ -541,13 +621,102 @@ $("side").onclick = (e) => {
   }
   const a = e.target.closest("a")
   if (a) {
-    showPage(a.dataset.p)
-    if (window.innerWidth <= 800) {
-      sideEl.classList.remove("open")
-      overlay.classList.remove("open")
-    }
+    if (a.dataset.p !== curP || curP === "new") showPage(a.dataset.p)
+    if (window.innerWidth <= 800) sideSet(false)
   }
 }
+/* drag to reorder (pointer events: works with mouse and touch, via the grip handle) */
+let drg = null
+$("side").addEventListener("pointerdown", (e) => {
+  const g = e.target.closest(".grip")
+  if (!g || sLocked()) return
+  const a = g.closest("a")
+  drg = { a, c: a.parentElement }
+  a.classList.add("drag")
+  g.setPointerCapture(e.pointerId)
+  e.preventDefault()
+})
+$("side").addEventListener("pointermove", (e) => {
+  if (!drg) return
+  const { a, c } = drg
+  let b = null
+  for (const t of c.children) {
+    if (t === a) continue
+    const r = t.getBoundingClientRect()
+    if (e.clientY < r.top + r.height / 2) {
+      b = t
+      break
+    }
+  }
+  if (a.nextElementSibling !== b) c.insertBefore(a, b)
+})
+const dEnd = () => {
+  if (!drg) return
+  const { a, c } = drg
+  drg = null
+  a.classList.remove("drag")
+  const ids = [...c.children].map((t) => t.dataset.p)
+  if (c.id === "mine") {
+    mine.sort((x, y) => ids.indexOf("m" + x.id) - ids.indexOf("m" + y.id))
+    saveMine()
+  } else {
+    ST.ord.ready = ids
+    persist()
+  }
+  side()
+}
+$("side").addEventListener("pointerup", dEnd)
+$("side").addEventListener("pointercancel", dEnd)
+/* double click to rename */
+$("side").addEventListener("dblclick", (e) => {
+  const a = e.target.closest("a")
+  if (
+    !a ||
+    a.dataset.p === "new" ||
+    sLocked() ||
+    e.target.closest(".x,.grip,input")
+  )
+    return
+  const p = a.dataset.p,
+    sp = a.querySelector("span"),
+    inp = document.createElement("input")
+  inp.className = "ren"
+  inp.maxLength = 30
+  inp.value = nameOf(p)
+  sp.replaceWith(inp)
+  inp.focus()
+  inp.select()
+  let fin = false
+  const done = (ok) => {
+    if (fin) return
+    fin = true
+    if (ok) {
+      const v = inp.value.trim()
+      if (v) ST.names[p] = v
+      else delete ST.names[p]
+      persist()
+    }
+    side()
+    if (curP === p && p !== "hanoi" && p !== "bsearch")
+      setTitle(
+        nameOf(p),
+        p[0] === "m"
+          ? "fn"
+          : p === "fact"
+            ? "fact"
+            : p === "fib"
+              ? "fib"
+              : "fn",
+      )
+  }
+  inp.onkeydown = (k) => {
+    k.stopPropagation()
+    if (k.key === "Enter") done(true)
+    else if (k.key === "Escape") done(false)
+  }
+  inp.onblur = () => done(true)
+  inp.onclick = (k) => k.stopPropagation()
+})
 const setTitle = (t, i) => {
   $("gTitle").innerHTML = ic(i, "ic-lg") + " " + esc(t)
 }
@@ -561,26 +730,35 @@ function showPage(p, first) {
   playing = false
   gTok++
   gPlay = false
-  const h = p === "hanoi"
+  bPlay = false
+  const h = p === "hanoi",
+    bs = p === "bsearch"
   $("pg-hanoi").classList.toggle("on", h)
-  $("pg-gen").classList.toggle("on", !h)
+  $("pg-bs").classList.toggle("on", bs)
+  $("pg-gen").classList.toggle("on", !h && !bs)
   ST.page = p
   persist()
-  if (h) {
+  if (bs) {
+    bInit(first ? SAVED.bs.step : ST.bs.step)
+  } else if (h) {
     const k = first ? SAVED.hstep : ST.hstep
     init()
     jump(k)
   } else {
     const pr = p[0] === "m" ? findM(+p.slice(1)) : PRE[p],
       d = p === "new" && !first ? null : ST.dr[p]
+    const rdy = !!PRE[p] && p !== "new"
+    $("gRun").innerHTML = ic("refresh") + (rdy ? " Reset" : " Run")
+    $("gCode").readOnly = rdy
+    $("gSave").style.display = rdy ? "none" : ""
     setTitle(
-      pr.t || pr.name,
+      nameOf(p),
       p[0] === "m" ? "fn" : p === "fact" ? "fact" : p === "fib" ? "fib" : "fn",
     )
     $("gDesc").textContent =
       pr.d ||
       "Your saved algorithm. Edit the code or the call and press Run to update it."
-    $("gCode").value = d ? d.code : pr.code
+    $("gCode").value = d && !rdy ? d.code : pr.code
     $("gCall").value = d ? d.call : pr.call
     gRun()
     if (d && d.step) gJump(d.step)
@@ -681,7 +859,7 @@ function gRun(save) {
         m.name = gName
         m.code = $("gCode").value
         m.call = $("gCall").value
-        setTitle(gName, "fn")
+        setTitle(nameOf(curP), "fn")
       }
     }
     saveMine()
@@ -728,7 +906,7 @@ function gLay() {
     )
     n.rw = tw("= " + n.rv, "700 11px ui-monospace,Consolas,monospace")
   })
-  const own = (n) => Math.max(n.w, n.rw) + 18
+  const own = (n) => n.w + 2 * (n.rw + 12)
   const S = (id) => {
     const n = gN[id]
     let k = 0
@@ -779,7 +957,7 @@ function gMk(total) {
     }
   })
   gN.forEach((n) => {
-    s += `<g class="nd pen" id="gn${n.id}"><title>${esc(lab(n))}</title><rect x="${X(n) - n.w / 2}" y="${Y(n) - 15}" width="${n.w}" height="30" rx="10"/><text class="n" style="font-size:12px" x="${X(n)}" y="${Y(n) + 4.5}" text-anchor="middle">${esc(n.lb)}</text><text class="rv" id="gv${n.id}" x="${X(n)}" y="${Y(n) + 31}" text-anchor="middle"></text></g>`
+    s += `<g class="nd pen" id="gn${n.id}"><title>${esc(lab(n))}</title><rect x="${X(n) - n.w / 2}" y="${Y(n) - 15}" width="${n.w}" height="30" rx="10"/><text class="n" style="font-size:12px" x="${X(n)}" y="${Y(n) + 4.5}" text-anchor="middle">${esc(n.lb)}</text><text class="rv" id="gv${n.id}" x="${X(n) + n.w / 2 + 6}" y="${Y(n) + 4}" text-anchor="start"></text></g>`
   })
   svg.innerHTML = s
 }
@@ -956,6 +1134,9 @@ $("gLog").onclick = (e) => {
   const d = e.target.closest(".lg")
   if (d && !busy && !loop) gJump(+d.dataset.k)
 }
+$("gCall").onchange = () => {
+  if ((curP === "fact" || curP === "fib") && !busy && !loop && !gPlay) gRun()
+}
 $("gCode").onkeydown = (e) => {
   if (e.key === "Tab") {
     e.preventDefault()
@@ -963,19 +1144,369 @@ $("gCode").onkeydown = (e) => {
   }
 }
 
+/* ===== Binary Search ===== */
+let bA = [],
+  bT = 0,
+  bN = [],
+  bE = [],
+  bI = 0,
+  bRes = -1,
+  bPlay = false,
+  bSpeed = 1
+const bl = (n) => `bs(${n.lo}, ${n.hi})`,
+  bTop = (e) => (e.stack.length ? bN[e.stack[e.stack.length - 1]] : null),
+  BW = 92,
+  BLH = 70,
+  BSH = 86
+function bBuild() {
+  bN = []
+  bE = []
+  const st = [],
+    done = new Set()
+  const snap = (type, id) =>
+    bE.push({ type, id, stack: st.slice(), done: new Set(done) })
+  snap("start", -1)
+  const rec = (lo, hi, par, dep) => {
+    const id = bN.length,
+      n = { id, lo, hi, par, dep, mid: -1, res: -1, act: "empty" }
+    bN.push(n)
+    st.push(id)
+    snap("call", id)
+    if (lo <= hi) {
+      n.mid = (lo + hi) >> 1
+      const v = bA[n.mid]
+      if (v === bT) {
+        n.act = "found"
+        n.res = n.mid
+        snap("cmp", id)
+      } else {
+        n.act = v < bT ? "right" : "left"
+        snap("cmp", id)
+        n.res =
+          v < bT
+            ? rec(n.mid + 1, hi, id, dep + 1)
+            : rec(lo, n.mid - 1, id, dep + 1)
+      }
+    } else snap("cmp", id)
+    st.pop()
+    done.add(id)
+    snap("ret", id)
+    return n.res
+  }
+  bRes = rec(0, bA.length - 1, -1, 0)
+}
+function bInit(k) {
+  const nums = $("bArr")
+      .value.split(/[\s,;]+/)
+      .filter(Boolean)
+      .map(Number),
+    t = parseFloat($("bTgt").value)
+  const err =
+    !nums.length || nums.some((x) => !isFinite(x))
+      ? "Enter numbers separated by commas."
+      : nums.length > 16
+        ? "Maximum 16 numbers."
+        : isNaN(t)
+          ? "Enter a numeric target."
+          : ""
+  $("bErr").textContent = err ? "⚠ " + err : ""
+  if (err) return
+  bA = nums.sort((a, b) => a - b)
+  bT = t
+  $("bArr").value = bA.join(", ")
+  bBuild()
+  bMk()
+  bJump(k || 0)
+}
+function bMk() {
+  $("bCells").innerHTML = bA
+    .map(
+      (v, i) =>
+        `<div class="bcw"><div class="bp" id="bp${i}"></div><div class="bc" id="bc${i}">${v}</div><div class="bx">${i}</div></div>`,
+    )
+    .join("")
+  const raw = []
+  bN.forEach(
+    (n) =>
+      (raw[n.id] =
+        n.par < 0 ? 0 : raw[n.par] + (bN[n.par].act === "left" ? -BSH : BSH)),
+  )
+  const mn = Math.min(...raw),
+    pad = BW / 2 + 14,
+    w = Math.max(...raw) - mn + pad * 2 + 50,
+    h = (Math.max(...bN.map((n) => n.dep)) + 1) * BLH + 30
+  bN.forEach((n) => {
+    n.cx = raw[n.id] - mn + pad
+    n.cy = n.dep * BLH + 30
+  })
+  let s = ""
+  bN.forEach((n) => {
+    if (n.par >= 0) {
+      const p = bN[n.par],
+        m = (p.cy + n.cy) / 2
+      s += `<path class="ed" id="be${n.id}" d="M${p.cx} ${p.cy + 19} C${p.cx} ${m},${n.cx} ${m},${n.cx} ${n.cy - 19}"/>`
+    }
+  })
+  bN.forEach((n) => {
+    s += `<g class="nd pen" id="bn${n.id}"><rect x="${n.cx - BW / 2}" y="${n.cy - 19}" width="${BW}" height="38" rx="10"/><text class="n" style="font-size:13px" x="${n.cx}" y="${n.cy - 2}" text-anchor="middle">${bl(n)}</text><text class="l" x="${n.cx}" y="${n.cy + 12}" text-anchor="middle">${n.mid < 0 ? "empty" : "mid=" + n.mid}</text><text class="rv" id="bv${n.id}" x="${n.cx + BW / 2 + 6}" y="${n.cy + 4}" text-anchor="start"></text></g>`
+  })
+  const svg = $("bTree")
+  svg.setAttribute("width", w)
+  svg.setAttribute("height", h)
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`)
+  svg.innerHTML = s
+}
+const bCmp = (n) =>
+  n.act === "empty"
+    ? "lo &gt; hi → empty range → return <b>-1</b>"
+    : `mid = ${n.mid}: a[${n.mid}] = <b>${bA[n.mid]}</b> ${n.act === "found" ? "= " + bT + " → <b>found</b>" : n.act === "right" ? "&lt; " + bT + " → go right (lo = " + (n.mid + 1) + ")" : "&gt; " + bT + " → go left (hi = " + (n.mid - 1) + ")"}`
+function bLg(k) {
+  const e = bE[k]
+  if (e.type === "start")
+    return `<div class="lg" data-k="0"><span class="k">0</span>Start: find <b>${bT}</b> in [${bA.join(", ")}]</div>`
+  const n = bN[e.id]
+  return (
+    `<div class="lg" data-k="${k}"><span class="k">${k}</span>` +
+    (e.type === "call"
+      ? `<span class="tag c">CALL</span><code>${bl(n)}</code> <small>depth ${n.dep + 1}</small>`
+      : e.type === "cmp"
+        ? `<span class="tag m">COMPARE</span>${bCmp(n)}`
+        : `<span class="tag r">RETURN</span><code>${bl(n)}</code> = <b>${n.res}</b>`) +
+    "</div>"
+  )
+}
+function bShow() {
+  const e = bE[bI],
+    c = bTop(e),
+    sm = !!c && e.type !== "call" && c.mid >= 0
+  let hit = -1
+  for (let j = 1; j <= bI; j++) {
+    const x = bE[j]
+    if (x.type === "cmp" && bN[x.id].act === "found") hit = bN[x.id].mid
+  }
+  bA.forEach((v, i) => {
+    const inR = c ? i >= c.lo && i <= c.hi : bI === 0 || i === hit
+    $("bc" + i).className =
+      "bc" +
+      (inR ? "" : " dim") +
+      (sm && i === c.mid ? " mid" : "") +
+      (i === hit ? " hit" : "")
+    $("bp" + i).innerHTML = c
+      ? (i === c.lo ? '<b class="S">L</b>' : "") +
+        (sm && i === c.mid ? '<b class="T">M</b>' : "") +
+        (i === c.hi ? '<b class="D">H</b>' : "")
+      : ""
+    if (c) {
+      const el = $("bc" + i)
+      if (inR && i === c.lo) el.classList.add("pL")
+      if (inR && i === c.hi) el.classList.add("pH")
+    }
+  })
+  bN.forEach((n) => {
+    const d = e.done.has(n.id)
+    let k = "pen"
+    if (d) k = "done"
+    else if (e.stack.includes(n.id)) k = n === c ? "act" : "rel"
+    $("bn" + n.id).setAttribute("class", "nd " + k)
+    $("bv" + n.id).textContent = d ? "= " + n.res : ""
+    const ed = $("be" + n.id)
+    if (ed)
+      ed.setAttribute("class", "ed " + (d ? "done" : k === "pen" ? "" : "rel"))
+  })
+  const n = e.id >= 0 ? bN[e.id] : null,
+    fo = c || n
+  if (fo) {
+    const b = $("bTB")
+    b.scrollTo({
+      left: fo.cx - b.clientWidth / 2,
+      top: fo.cy - b.clientHeight / 2,
+    })
+  }
+  let info =
+    e.type === "start"
+      ? `Find <b>${bT}</b> in the sorted array. Press ▶ Play or Step.`
+      : e.type === "call"
+        ? `<b>CALL</b> ${bl(n)} · range [${n.lo}..${n.hi}] · depth ${n.dep + 1}`
+        : e.type === "cmp"
+          ? `<b>COMPARE</b> ${bCmp(n)}`
+          : `<b>RETURN</b> ${bl(n)} = <b>${n.res}</b>`
+  if (bI === bE.length - 1)
+    info +=
+      bRes >= 0
+        ? ` · <b>Found ${bT} at index ${bRes}</b>`
+        : ` · <b>${bT} is not in the array</b>`
+  $("bInfo").innerHTML = info
+  const pe = bE[Math.max(0, bI - 1)],
+    pv = bTop(pe),
+    psm = !!pv && pe.type !== "call" && pv.mid >= 0,
+    v = (x, m, k) => (x && (k !== "mid" || m) ? x[k] : "—")
+  $("bRb").innerHTML = [
+    ["low", "S", "lo"],
+    ["mid", "T", "mid"],
+    ["high", "D", "hi"],
+  ]
+    .map(([l, cl, k]) => {
+      const a = v(pv, psm, k),
+        b = v(c, sm, k)
+      return `<div class="rc ${cl}"><small>${l}</small><div>${a} ⟶ <span class="${a !== b ? "ch" : ""}">${b}</span></div></div>`
+    })
+    .join("")
+  const s =
+    e.stack
+      .map((id, j) => {
+        const x = bN[id],
+          top = j === e.stack.length - 1,
+          m = x.mid >= 0 && !(top && e.type === "call")
+        return `<div class="fr ${top ? "top" : ""}" style="margin-left:${Math.min(j, 8) * 10}px"><span>${bl(x)}</span><span class="chips"><span class="chip S">lo=${x.lo}</span>${m ? `<span class="chip T">mid=${x.mid}</span>` : ""}<span class="chip D">hi=${x.hi}</span></span></div>`
+      })
+      .join("") || '<span style="color:var(--mut)">Stack is empty</span>'
+  const el = $("bStack")
+  if (el.dataset.h !== s) {
+    el.dataset.h = s
+    el.innerHTML = s
+    el.scrollTop = el.scrollHeight
+  }
+  $("bCnt").textContent = `Step ${bI} / ${bE.length - 1}`
+  $("bPl").innerHTML = bPlay ? ic("pause") + " Pause" : ic("play") + " Play"
+  ST.bs = { arr: $("bArr").value, t: $("bTgt").value, step: bI, sp: bSpeed }
+  persist()
+}
+function bMark() {
+  const l = $("bLog"),
+    c = l.querySelector(".cur")
+  if (c) c.classList.remove("cur")
+  const t = l.lastElementChild
+  if (t) {
+    t.classList.add("cur")
+    l.scrollTop = l.scrollHeight
+  }
+}
+function bJump(k) {
+  bPlay = false
+  bI = Math.max(0, Math.min(bE.length - 1, k))
+  bShow()
+  let h = ""
+  for (let j = 0; j <= bI; j++) h += bLg(j)
+  $("bLog").innerHTML = h
+  bMark()
+}
+async function bStep() {
+  if (busy || bI >= bE.length - 1) return false
+  busy = true
+  uiLock()
+  try {
+    bI++
+    bShow()
+    $("bLog").insertAdjacentHTML("beforeend", bLg(bI))
+    bMark()
+    await sleep(Math.max(250, 700 / bSpeed))
+  } finally {
+    busy = false
+    uiLock()
+  }
+  return true
+}
+async function bPlayF() {
+  if (bPlay) {
+    bPlay = false
+    uiLock()
+    return
+  }
+  if (busy || loop || !bE.length) return
+  if (bI >= bE.length - 1) bJump(0)
+  loop = true
+  bPlay = true
+  uiLock()
+  bShow()
+  try {
+    while (bPlay && bI < bE.length - 1) await bStep()
+  } finally {
+    bPlay = false
+    loop = false
+    uiLock()
+    bShow()
+  }
+}
+$("bRs").onclick = () => {
+  if (!busy && !loop) bInit(0)
+}
+$("bPl").onclick = bPlayF
+$("bFw").onclick = () => {
+  if (!busy && !loop) bStep()
+}
+$("bBk").onclick = () => {
+  if (!busy && !loop) bJump(bI - 1)
+}
+$("bArr").onchange = $("bTgt").onchange = () => {
+  if (!busy && !loop) bInit(0)
+}
+$("bSp").oninput = (e) => {
+  bSpeed = +e.target.value
+  ST.bs.sp = bSpeed
+  persist()
+}
+$("bLog").onclick = (e) => {
+  const d = e.target.closest(".lg")
+  if (d && !busy && !loop) bJump(+d.dataset.k)
+}
+
 /* ===== theme, glass, restore ===== */
+const ACC = {
+  blue: "#5b8def",
+  violet: "#8b6cf0",
+  cyan: "#22b8cf",
+  pink: "#e5609c",
+  slate: "#6b7a99",
+}
 function applyTheme() {
   const t =
     ST.theme ||
     (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light")
   document.documentElement.dataset.theme = t
-  $("thm").innerHTML =
-    t === "dark" ? ic("sun") + " Light mode" : ic("moon") + " Dark mode"
+  document
+    .querySelectorAll("#segTh button")
+    .forEach((b) => b.classList.toggle("on", b.dataset.t === t))
 }
-$("thm").onclick = () => {
-  ST.theme =
-    document.documentElement.dataset.theme === "dark" ? "light" : "dark"
-  applyTheme()
+function applyUI() {
+  const d = document.documentElement
+  d.dataset.corner = ST.corner
+  d.style.setProperty("--rel", ACC[ST.accent] || ACC.blue)
+  document
+    .querySelectorAll("#segCo button")
+    .forEach((b) => b.classList.toggle("on", b.dataset.c === ST.corner))
+  document
+    .querySelectorAll("#swA button")
+    .forEach((b) => b.classList.toggle("on", b.dataset.c === ST.accent))
+  $("sCard").classList.toggle("open", !!ST.setOpen)
+  $("glv").textContent = Math.round(ST.alpha * 100) + "%"
+}
+$("segTh").onclick = (e) => {
+  const b = e.target.closest("button")
+  if (b) {
+    ST.theme = b.dataset.t
+    applyTheme()
+    persist()
+  }
+}
+$("segCo").onclick = (e) => {
+  const b = e.target.closest("button")
+  if (b) {
+    ST.corner = b.dataset.c
+    applyUI()
+    persist()
+  }
+}
+$("swA").onclick = (e) => {
+  const b = e.target.closest("button")
+  if (b) {
+    ST.accent = b.dataset.c
+    applyUI()
+    persist()
+  }
+}
+$("sTog").onclick = () => {
+  ST.setOpen = !ST.setOpen
+  applyUI()
   persist()
 }
 const devModal = $("devModal"),
@@ -1007,15 +1538,21 @@ function applyAlpha() {
 $("gla").oninput = (e) => {
   ST.alpha = +e.target.value
   applyAlpha()
+  applyUI()
   persist()
 }
 applyTheme()
 applyAlpha()
+applyUI()
 $("n").value = SAVED.hn
 $("sp").value = SAVED.hs
 speed = SAVED.hs
 $("gSpd").value = SAVED.gs
 gSpeed = SAVED.gs
+$("bArr").value = SAVED.bs.arr
+$("bTgt").value = SAVED.bs.t
+$("bSp").value = SAVED.bs.sp
+bSpeed = +SAVED.bs.sp
 let p0 = SAVED.page
 if (p0[0] === "m" && !findM(+p0.slice(1))) p0 = "hanoi"
 showPage(p0, true)
