@@ -10,6 +10,7 @@ let ST = {
   hstep: 0,
   dr: {},
   bs: { arr: "2, 5, 8, 12, 16, 23, 38, 56, 72, 91", t: "23", step: 0, sp: 1 },
+  hl: { h: 3, step: 0, sp: 1 },
   names: {},
   ord: { ready: null },
   hideMine: false,
@@ -380,9 +381,10 @@ function jump(k) {
 }
 let busy = false,
   loop = false,
-  gPlay = false
+  gPlay = false,
+  hlPlay = false
 function uiLock() {
-  const lk = busy || loop || playing || gPlay || bPlay
+  const lk = busy || loop || playing || gPlay || bPlay || hlPlay
   document.body.classList.toggle("locked", lk)
   document.querySelectorAll("button,input[type=number],#bArr").forEach((b) => {
     b.disabled =
@@ -391,6 +393,7 @@ function uiLock() {
         (b.id === "pl" && playing) ||
         (b.id === "bPl" && bPlay) ||
         (b.id === "gPl" && gPlay) ||
+        (b.id === "hlPl" && hlPlay) ||
         b.classList.contains("keep")
       )
   })
@@ -546,11 +549,12 @@ const RD = [
   { p: "fib", i: "fib", n: "Fibonacci" },
   { p: "bsearch", i: "search", n: "Binary Search" },
 ]
+const CV = [{ p: "hilbert", i: "curve", n: "Hilbert Curve" }]
 const nameOf = (p) =>
   ST.names[p] ||
   (p[0] === "m"
     ? (findM(+p.slice(1)) || {}).name
-    : (RD.find((r) => r.p === p) || {}).n) ||
+    : ([...RD, ...CV].find((r) => r.p === p) || {}).n) ||
   (PRE[p] || {}).t ||
   ""
 const readyList = () => {
@@ -571,6 +575,8 @@ function side() {
       sItem("m" + m.id, "fn", `<b class="x" data-x="${m.id}">${ic("x")}</b>`),
     )
     .join("")
+  $("curves").innerHTML = CV.map((r) => sItem(r.p, r.i)).join("")
+  $("tHil").textContent = nameOf("hilbert")
   $("mine").style.display = ST.hideMine ? "none" : ""
   $("mineBar").style.display = mine.length ? "" : "none"
   $("mHide").style.display = ST.hideMine ? "none" : ""
@@ -582,7 +588,7 @@ function side() {
     .querySelectorAll("#side a")
     .forEach((a) => a.classList.toggle("on", a.dataset.p === curP))
 }
-const sLocked = () => busy || loop || playing || gPlay || bPlay
+const sLocked = () => busy || loop || playing || gPlay || bPlay || hlPlay
 $("side").onclick = (e) => {
   if (sLocked()) return
   if (e.target.closest(".grip,input")) return
@@ -697,7 +703,7 @@ $("side").addEventListener("dblclick", (e) => {
       persist()
     }
     side()
-    if (curP === p && p !== "hanoi" && p !== "bsearch")
+    if (curP === p && p !== "hanoi" && p !== "bsearch" && p !== "hilbert")
       setTitle(
         nameOf(p),
         p[0] === "m"
@@ -731,15 +737,21 @@ function showPage(p, first) {
   gTok++
   gPlay = false
   bPlay = false
+  hlPlay = false
+  cancelAnimationFrame(hRaf)
   const h = p === "hanoi",
-    bs = p === "bsearch"
+    bs = p === "bsearch",
+    hil = p === "hilbert"
   $("pg-hanoi").classList.toggle("on", h)
   $("pg-bs").classList.toggle("on", bs)
-  $("pg-gen").classList.toggle("on", !h && !bs)
+  $("pg-hil").classList.toggle("on", hil)
+  $("pg-gen").classList.toggle("on", !h && !bs && !hil)
   ST.page = p
   persist()
   if (bs) {
     bInit(first ? SAVED.bs.step : ST.bs.step)
+  } else if (hil) {
+    hlInit(first ? SAVED.hl.step : ST.hl.step, true)
   } else if (h) {
     const k = first ? SAVED.hstep : ST.hstep
     init()
@@ -1450,6 +1462,532 @@ $("bLog").onclick = (e) => {
   if (d && !busy && !loop) bJump(+d.dataset.k)
 }
 
+/* ===== Recursion curves: Hilbert ===== */
+const HC = ["#D85A30", "#1D9E75", "#7F77DD", "#BA7517", "#D4537E"],
+  HQ = [
+    {
+      o: [0.5, 0],
+      T: [0, -1, -1, 0, 1, 1],
+      n: "Top right",
+      t: "mirror on / diagonal",
+    },
+    { o: [0, 0], T: [1, 0, 0, 1, 0, 0], n: "Top left", t: "same" },
+    { o: [0, 0.5], T: [1, 0, 0, 1, 0, 0], n: "Bottom left", t: "same" },
+    {
+      o: [0.5, 0.5],
+      T: [0, 1, 1, 0, 0, 0],
+      n: "Bottom right",
+      t: "mirror on \\ diagonal",
+    },
+  ],
+  HCH = HQ.map((q) => [
+    q.T[0] / 2,
+    q.T[1] / 2,
+    q.T[2] / 2,
+    q.T[3] / 2,
+    q.T[4] / 2 + q.o[0],
+    q.T[5] / 2 + q.o[1],
+  ]),
+  hap = (M, p) => [
+    M[0] * p[0] + M[2] * p[1] + M[4],
+    M[1] * p[0] + M[3] * p[1] + M[5],
+  ],
+  hmul = (M, N) => [
+    M[0] * N[0] + M[2] * N[1],
+    M[1] * N[0] + M[3] * N[1],
+    M[0] * N[2] + M[2] * N[3],
+    M[1] * N[2] + M[3] * N[3],
+    M[0] * N[4] + M[2] * N[5] + M[4],
+    M[1] * N[4] + M[3] * N[5] + M[5],
+  ],
+  HSt = [[0.5, 0.5]],
+  HEn = [[0.5, 0.5]],
+  hcss = (v) =>
+    getComputedStyle(document.documentElement).getPropertyValue(v).trim(),
+  hfmt = (n) => n.toLocaleString("en-US"),
+  hease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2)
+for (let i = 1; i <= 14; i++) {
+  HSt[i] = hap(HCH[0], HSt[i - 1])
+  HEn[i] = hap(HCH[3], HEn[i - 1])
+}
+let hN = [],
+  hE = [],
+  hCC = [],
+  hVis = [],
+  hh = 3,
+  hD = 3,
+  hCo = 0,
+  hTD = 3,
+  hI = 0,
+  hSp = 1,
+  hProg = 1,
+  hRaf = 0,
+  hAccN = 0,
+  hLast = null,
+  hCell = 1
+const HS = 1000,
+  HP = 20,
+  HCW = 30,
+  HLH = 56,
+  hcv = $("hlCv"),
+  hctx = hcv.getContext("2d"),
+  hacc = document.createElement("canvas")
+hacc.width = hacc.height = HS
+const hax = hacc.getContext("2d"),
+  hmp = (p) => [HP + p[0] * (HS - 2 * HP), HP + p[1] * (HS - 2 * HP)],
+  hps = (nd) => hap(nd.M, HSt[nd.n]),
+  hpe = (nd) => hap(nd.M, HEn[nd.n]),
+  hLw = (n) => Math.max(1.2, Math.min(8, hCell * 0.03 * (n + 1)))
+/* the real recursion, recorded as events: 0 call, 1 emit/block, 2 link, 3 return, 4 start.
+   Only the top 7 levels are expanded; for h > 7 the leaves are blocks of order h-7. */
+function hBuild(h) {
+  hh = h
+  hD = Math.min(h, 7)
+  hCo = h - hD
+  hTD = Math.min(hD, 4)
+  hN = []
+  hE = []
+  hCC = []
+  let cc = 0
+  const ad = (x) => {
+    hE.push(x)
+    if (x[0] === 0) cc++
+    hCC.push(cc)
+  }
+  ad([4, -1])
+  const rec = (n, M, dep, q, par) => {
+    const id = hN.length,
+      nd = { id, n, M, dep, q, par, c: hE.length, r: 0, ch: [], x: 0, cls: "" }
+    hN.push(nd)
+    ad([0, id])
+    if (dep === hD) ad([1, id])
+    else
+      for (let i = 0; i < 4; i++) {
+        const cid = hN.length
+        nd.ch.push(cid)
+        rec(n - 1, hmul(M, HCH[i]), dep + 1, i, id)
+        if (i < 3) ad([2, id, cid, hN.length])
+      }
+    nd.r = hE.length
+    ad([3, id])
+  }
+  rec(h, [1, 0, 0, 1, 0, 0], 0, -1, -1)
+}
+function hPts(M, n, cb) {
+  if (!n) return cb(hap(M, [0.5, 0.5]))
+  for (let i = 0; i < 4; i++) hPts(hmul(M, HCH[i]), n - 1, cb)
+}
+function hSeg(c, p, q, col, w) {
+  const a = hmp(p),
+    b = hmp(q)
+  c.beginPath()
+  c.moveTo(a[0], a[1])
+  c.lineTo(b[0], b[1])
+  c.strokeStyle = col
+  c.lineWidth = w
+  c.stroke()
+}
+function hPaint(i) {
+  const e = hE[i]
+  if (e[0] === 2) {
+    const A = hN[e[2]],
+      B = hN[e[3]],
+      P = hN[e[1]],
+      p = hpe(A),
+      q = hps(B)
+    hSeg(hax, p, q, HC[P.dep % 5], hLw(P.n))
+    hLast = [p, q]
+  } else if (e[0] === 1) {
+    const nd = hN[e[1]]
+    if (!nd.n) {
+      if (hCell >= 5) {
+        const c = hmp(hap(nd.M, [0.5, 0.5]))
+        hax.beginPath()
+        hax.arc(c[0], c[1], Math.min(10, hCell * 0.16), 0, 7)
+        hax.fillStyle = hcss("--mut")
+        hax.fill()
+      }
+    } else {
+      let prev = null,
+        last = null
+      hax.beginPath()
+      hPts(nd.M, nd.n, (p) => {
+        const [x, y] = hmp(p)
+        prev ? hax.lineTo(x, y) : hax.moveTo(x, y)
+        last = prev
+        prev = p
+      })
+      hax.strokeStyle = HC[nd.dep % 5]
+      hax.lineWidth = Math.max(1, Math.min(6, hCell * 0.03))
+      hax.stroke()
+      hLast = [last, prev]
+    }
+  }
+}
+function hSync(k) {
+  const t = k + (hE[k][0] === 1 && hCo > 0 ? 1 : 0)
+  if (hAccN > t) {
+    hax.clearRect(0, 0, HS, HS)
+    hAccN = 0
+    hLast = null
+  }
+  hax.lineCap = hax.lineJoin = "round"
+  while (hAccN < t) hPaint(hAccN++)
+}
+const hCur = (e) => (e[0] === 4 ? -1 : e[0] === 3 ? hN[e[1]].par : e[1]),
+  hChain = () => {
+    const ch = []
+    for (let i = hCur(hE[hI]); i >= 0; i = hN[i].par) ch.unshift(hN[i])
+    return ch
+  },
+  harr = (c, p, q, sz, col) => {
+    c.save()
+    c.translate(q[0], q[1])
+    c.rotate(Math.atan2(q[1] - p[1], q[0] - p[0]))
+    c.beginPath()
+    c.moveTo(0, 0)
+    c.lineTo(-sz, -sz * 0.6)
+    c.lineTo(-sz, sz * 0.6)
+    c.closePath()
+    c.fillStyle = col
+    c.fill()
+    c.restore()
+  }
+function hDraw() {
+  const e = hE[hI],
+    c = hctx,
+    ink = hcss("--txt"),
+    ch = hChain(),
+    sz = Math.max(8, Math.min(14, hCell * 0.3))
+  c.clearRect(0, 0, HS, HS)
+  c.strokeStyle = hcss("--bd")
+  c.lineWidth = 2
+  c.strokeRect(HP, HP, HS - 2 * HP, HS - 2 * HP)
+  c.drawImage(hacc, 0, 0)
+  ch.forEach((nd, j) => {
+    const top = j === ch.length - 1,
+      col = HC[nd.dep % 5]
+    c.beginPath()
+    ;[
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+    ].forEach((q, i) => {
+      const [x, y] = hmp(hap(nd.M, q))
+      i ? c.lineTo(x, y) : c.moveTo(x, y)
+    })
+    c.closePath()
+    if (top) {
+      c.fillStyle = col + "2a"
+      c.fill()
+      c.setLineDash([])
+      c.lineWidth = 4
+      c.strokeStyle = col
+    } else {
+      c.setLineDash([10, 8])
+      c.lineWidth = 2.5
+      c.strokeStyle = col + "bb"
+    }
+    c.stroke()
+    c.setLineDash([])
+    if (top && nd.n > 0) {
+      const g = HQ.map((q) => hmp(hap(nd.M, [q.o[0] + 0.25, q.o[1] + 0.25])))
+      c.beginPath()
+      g.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])))
+      c.setLineDash([4, 7])
+      c.lineWidth = 2.5
+      c.strokeStyle = col
+      c.stroke()
+      c.setLineDash([])
+      c.beginPath()
+      c.arc(g[0][0], g[0][1], 8, 0, 7)
+      c.fillStyle = col
+      c.fill()
+      c.beginPath()
+      c.arc(g[3][0], g[3][1], 8, 0, 7)
+      c.lineWidth = 3
+      c.fillStyle = hcss("--field")
+      c.fill()
+      c.stroke()
+    }
+  })
+  let seg = hLast && [hmp(hLast[0]), hmp(hLast[1])]
+  if (e[0] === 2) {
+    const p = hmp(hpe(hN[e[2]])),
+      q = hmp(hps(hN[e[3]])),
+      t = hease(hProg),
+      tip = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]
+    c.beginPath()
+    c.moveTo(p[0], p[1])
+    c.lineTo(tip[0], tip[1])
+    c.strokeStyle = ink
+    c.lineWidth = hLw(hN[e[1]].n) + 2
+    c.lineCap = "round"
+    c.stroke()
+    seg = hProg > 0.05 ? [p, tip] : seg
+  } else if (e[0] === 1 && !hN[e[1]].n) {
+    const p = hmp(hap(hN[e[1]].M, [0.5, 0.5]))
+    c.beginPath()
+    c.arc(
+      p[0],
+      p[1],
+      Math.max(4, Math.min(14, hCell * 0.2)) * hease(hProg),
+      0,
+      7,
+    )
+    c.fillStyle = ink
+    c.fill()
+  }
+  if (seg) harr(c, seg[0], seg[1], sz, ink)
+}
+function hAnim(on) {
+  cancelAnimationFrame(hRaf)
+  const e = hE[hI]
+  if (
+    !on ||
+    (e[0] !== 2 && e[0] !== 1) ||
+    (hCo && e[0] === 1) ||
+    matchMedia("(prefers-reduced-motion:reduce)").matches
+  ) {
+    hProg = 1
+    return
+  }
+  hProg = 0
+  const t0 = performance.now(),
+    d = Math.min(420, 320 / hSp)
+  const f = (n) => {
+    hProg = Math.min(1, (n - t0) / d)
+    hDraw()
+    if (hProg < 1) hRaf = requestAnimationFrame(f)
+  }
+  hRaf = requestAnimationFrame(f)
+}
+/* ---------- tree (top levels only; deeper calls fold into their ancestor) ---------- */
+function hMkTree() {
+  let lc = 0
+  hN.forEach((nd) => {
+    if (nd.dep === hTD) nd.x = lc++
+  })
+  for (let i = hN.length - 1; i >= 0; i--) {
+    const nd = hN[i]
+    if (nd.dep < hTD && nd.ch.length)
+      nd.x = (hN[nd.ch[0]].x + hN[nd.ch[nd.ch.length - 1]].x) / 2
+  }
+  hVis = hN.filter((n) => n.dep <= hTD)
+  const X = (n) => n.x * HCW + HCW / 2,
+    Y = (n) => n.dep * HLH + 28,
+    w = lc * HCW,
+    h = hTD * HLH + 56,
+    svg = $("hlTree")
+  let s = ""
+  hVis.forEach((n) => {
+    if (n.par >= 0) {
+      const p = hN[n.par],
+        m = (Y(p) + Y(n)) / 2
+      s += `<path class="ed" id="he${n.id}" d="M${X(p)} ${Y(p) + 16} C${X(p)} ${m},${X(n)} ${m},${X(n)} ${Y(n) - 16}"/>`
+    }
+  })
+  hVis.forEach((n) => {
+    s += `<g class="nd pen" id="hn${n.id}"><title>hilbert(${n.n})${n.q >= 0 ? " - child " + (n.q + 1) + ", " + HQ[n.q].n : ""}</title><rect x="${X(n) - 12}" y="${Y(n) - 16}" width="24" height="32" rx="8"/><text class="n" style="font-size:13px" x="${X(n)}" y="${Y(n) - 1}" text-anchor="middle">${n.n}</text><text class="l" x="${X(n)}" y="${Y(n) + 11}" text-anchor="middle">${n.q >= 0 ? "#" + (n.q + 1) : "root"}</text></g>`
+  })
+  svg.setAttribute("width", w)
+  svg.setAttribute("height", h)
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`)
+  svg.innerHTML = s
+}
+function hTreeShow() {
+  let t = hCur(hE[hI])
+  while (t >= 0 && hN[t].dep > hTD) t = hN[t].par
+  hVis.forEach((nd) => {
+    let c = "pen"
+    if (nd.r <= hI) c = "done"
+    else if (nd.c <= hI) c = nd.id === t ? "act" : "rel"
+    if (nd.cls === c) return
+    nd.cls = c
+    $("hn" + nd.id).setAttribute("class", "nd " + c)
+    const ed = $("he" + nd.id)
+    if (ed)
+      ed.setAttribute(
+        "class",
+        "ed " + (c === "done" ? "done" : c === "pen" ? "" : "rel"),
+      )
+  })
+  if (t >= 0) {
+    const b = $("hlTB"),
+      n = hN[t]
+    b.scrollTo({
+      left: n.x * HCW + HCW / 2 - b.clientWidth / 2,
+      top: n.dep * HLH - b.clientHeight / 2 + 40,
+    })
+  }
+}
+function hStackShow() {
+  const ch = hChain()
+  $("hlStack").innerHTML =
+    ch
+      .map(
+        (nd, j) =>
+          `<div class="fr ${j === ch.length - 1 ? "top" : ""}" style="margin-left:${Math.min(j, 8) * 10}px"><span>hilbert(${nd.n})${nd.dep === hD && hCo ? " block" : ""}</span><span class="chips">${nd.q < 0 ? '<span class="chip" style="background:var(--rel)">root</span>' : `<span class="chip" style="background:${HC[nd.dep % 5]}">child ${nd.q + 1}</span><span class="chip" style="background:var(--rel)">${HQ[nd.q].n}</span><span class="chip" style="background:var(--T)">${HQ[nd.q].t}</span>`}</span></div>`,
+      )
+      .join("") || '<span style="color:var(--mut)">Stack is empty</span>'
+}
+function hLogRow(k) {
+  const e = hE[k],
+    nd = e[1] >= 0 ? hN[e[1]] : null
+  let m
+  if (e[0] === 4) m = `Start: hilbert(${hh}) - ${hfmt(Math.pow(4, hh))} points`
+  else if (e[0] === 0)
+    m = `<span class="tag c">CALL</span><code>hilbert(${nd.n})</code> ${nd.q >= 0 ? `<small>child ${nd.q + 1} of hilbert(${nd.n + 1}) → ${HQ[nd.q].n}</small>` : "<small>root call</small>"}`
+  else if (e[0] === 1)
+    m = nd.n
+      ? `<span class="tag m">BLOCK</span>draw <code>hilbert(${nd.n})</code> at once (${hfmt(Math.pow(4, nd.n))} points)`
+      : `<span class="tag m">EMIT</span>point at the center of this cell`
+  else if (e[0] === 2)
+    m = `<span class="tag m">LINK</span>end of child ${hN[e[2]].q + 1} → start of child ${hN[e[3]].q + 1} <small>(inside hilbert(${nd.n}))</small>`
+  else
+    m = `<span class="tag r">RETURN</span><code>hilbert(${nd.n})</code> finished <small>(${hfmt(Math.pow(4, nd.n))} points)</small>`
+  return `<div class="lg" data-k="${k}"><span class="k">${k}</span>${m}</div>`
+}
+function hInfoTxt() {
+  const e = hE[hI],
+    nd = e[1] >= 0 ? hN[e[1]] : null
+  let s
+  if (e[0] === 4)
+    s =
+      `Ready: <b>hilbert(${hh})</b> = ${hfmt(Math.pow(4, hh))} points. Press Play or Step.` +
+      (hCo
+        ? ` The top 7 levels are traced call by call; the leaves are blocks of order ${hCo} drawn in one step.`
+        : "")
+  else if (e[0] === 0)
+    s =
+      `<b>CALL</b> hilbert(${nd.n})${nd.q >= 0 ? ` as child ${nd.q + 1} of its parent: it fills the <b>${HQ[nd.q].n.toLowerCase()}</b> quadrant, copy is <b>${HQ[nd.q].t}</b>` : " (root)"} · ` +
+      (nd.dep < hD
+        ? `it will call hilbert(${nd.n - 1}) 4 times and add 3 links`
+        : hCo
+          ? `order ${nd.n} is drawn as one block`
+          : "base case: it will emit one point")
+  else if (e[0] === 1)
+    s = nd.n
+      ? `<b>BLOCK</b> hilbert(${nd.n}) drawn at once: ${hfmt(Math.pow(4, nd.n))} points`
+      : "<b>EMIT</b> base case: one point at the center of the cell"
+  else if (e[0] === 2)
+    s = `<b>LINK</b> hilbert(${nd.n}) joins the end of its child ${hN[e[2]].q + 1} to the start of its child ${hN[e[3]].q + 1}`
+  else
+    s = `<b>RETURN</b> hilbert(${nd.n}) finished${nd.par >= 0 ? ", back to hilbert(" + hN[nd.par].n + ")" : ""}`
+  if (hI === hE.length - 1)
+    s += ` · <b>Done: hilbert(${hh}) has ${hfmt(Math.pow(4, hh))} points</b>`
+  return s
+}
+function hShow() {
+  hSync(hI)
+  hDraw()
+  hTreeShow()
+  hStackShow()
+  let h = ""
+  for (let j = Math.max(0, hI - 199); j <= hI; j++) h += hLogRow(j)
+  const l = $("hlLog")
+  l.innerHTML = h
+  if (l.lastElementChild) l.lastElementChild.classList.add("cur")
+  l.scrollTop = l.scrollHeight
+  $("hlInfo").innerHTML = hInfoTxt()
+  $("hlCnt").textContent =
+    `Step ${hI} / ${hE.length - 1} · Calls: ${hCC[hI]} / ${hN.length}`
+  $("hlScrub").value = hI
+  $("hlPl").innerHTML = hlPlay ? ic("pause") + " Pause" : ic("play") + " Play"
+  ST.hl = { h: hh, step: hI, sp: hSp }
+  persist()
+}
+function hGo(k, anim) {
+  hI = Math.max(0, Math.min(hE.length - 1, k))
+  hAnim(anim)
+  hShow()
+}
+function hJump(k) {
+  hlPlay = false
+  hGo(k, false)
+}
+function hlInit(step, load) {
+  hlPlay = false
+  if (load) {
+    $("hlN").value = ST.hl.h
+    hSp = ST.hl.sp || 1
+    $("hlSp").value = hSp
+  }
+  let v = parseInt($("hlN").value)
+  if (isNaN(v)) v = 3
+  v = Math.max(0, Math.min(12, v))
+  $("hlN").value = v
+  hBuild(v)
+  hCell = (HS - 2 * HP) / Math.pow(2, v)
+  hax.clearRect(0, 0, HS, HS)
+  hAccN = 0
+  hLast = null
+  hMkTree()
+  $("hlScrub").max = hE.length - 1
+  hJump(Math.min(step || 0, hE.length - 1))
+}
+async function hStep(b) {
+  if (busy || hI >= hE.length - 1) return false
+  busy = true
+  uiLock()
+  try {
+    hGo(hI + b, b === 1)
+    await sleep(Math.max(40, 360 / hSp))
+  } finally {
+    busy = false
+    uiLock()
+  }
+  return true
+}
+async function hPlayF() {
+  if (hlPlay) {
+    hlPlay = false
+    uiLock()
+    return
+  }
+  if (busy || loop) return
+  if (hI >= hE.length - 1) hJump(0)
+  loop = true
+  hlPlay = true
+  uiLock()
+  hShow()
+  const b = 1 + Math.floor(hE.length / 6000)
+  try {
+    while (hlPlay && hI < hE.length - 1) await hStep(b)
+  } finally {
+    hlPlay = false
+    loop = false
+    uiLock()
+    hShow()
+  }
+}
+$("hlRs").onclick = () => {
+  if (!busy && !loop) hlInit(0)
+}
+$("hlPl").onclick = hPlayF
+$("hlFw").onclick = () => {
+  if (!busy && !loop) hStep(1)
+}
+$("hlBk").onclick = () => {
+  if (!busy && !loop) hJump(hI - 1)
+}
+$("hlN").onchange = () => {
+  if (!busy && !loop) hlInit(0)
+}
+$("hlSp").oninput = (e) => {
+  hSp = +e.target.value
+  ST.hl.sp = hSp
+  persist()
+}
+$("hlScrub").oninput = (e) => {
+  if (!busy && !loop) hJump(+e.target.value)
+}
+$("hlLog").onclick = (e) => {
+  const d = e.target.closest(".lg")
+  if (d && !busy && !loop) hJump(+d.dataset.k)
+}
+
 /* ===== theme, glass, restore ===== */
 const ACC = {
   blue: "#5b8def",
@@ -1529,6 +2067,38 @@ devModal.addEventListener("click", (e) => {
 })
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && devModal.classList.contains("open")) closeDevModal()
+})
+
+/* ===== keyboard shortcuts for every algorithm page ===== */
+const KEYS = {
+  hanoi: ["rs", "bk", "pl", "fw"],
+  bsearch: ["bRs", "bBk", "bPl", "bFw"],
+  hilbert: ["hlRs", "hlBk", "hlPl", "hlFw"],
+  gen: ["gRun", "gBk", "gPl", "gFw"],
+}
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
+  if (devModal.classList.contains("open")) return
+  const t = e.target
+  if (t.closest && t.closest("textarea,select,[contenteditable='true']")) return
+  if (
+    t.tagName === "INPUT" &&
+    !["range", "checkbox", "button"].includes(t.type)
+  )
+    return
+  const i = { KeyR: 0, ArrowLeft: 1, Space: 2, ArrowRight: 3 }[e.code]
+  if (i === undefined) return
+  if (e.repeat && (i === 0 || i === 2)) return
+  if (i === 0 && curP === "new") return
+  const set = KEYS[curP] || KEYS.gen,
+    b = $(set[i])
+  e.preventDefault()
+  const a = document.activeElement
+  if (a && /^(BUTTON|INPUT)$/.test(a.tagName)) a.blur()
+  if (b && !b.disabled) b.click()
+})
+document.addEventListener("change", (e) => {
+  if (e.target.type === "number") e.target.blur()
 })
 
 function applyAlpha() {

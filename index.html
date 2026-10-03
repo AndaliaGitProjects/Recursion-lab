@@ -42,6 +42,9 @@
             d="M15 4.6c-2.3-.6-3.7.6-4.1 2.6L9.2 17.4c-.4 2.2-1.6 3.1-3.7 2.6M6.8 10h8"
           />
         </symbol>
+        <symbol id="i-curve" viewBox="0 0 24 24">
+          <path d="M5 19V5h5v9h4V5h5v14" />
+        </symbol>
         <symbol id="i-plus" viewBox="0 0 24 24">
           <path d="M12 5v14M5 12h14" />
         </symbol>
@@ -152,7 +155,15 @@
       <div id="mine"></div>
       <div class="sec">Ready-made algorithms</div>
       <div id="ready"></div>
+      <div class="sec">Recursion curves</div>
+      <div id="curves"></div>
       <div class="setg">
+        <div class="keys">
+          <b>Keyboard</b><br /><kbd>Space</kbd> play / pause<br /><kbd
+            >&rarr;</kbd
+          >
+          next step · <kbd>&larr;</kbd> back<br /><kbd>R</kbd> reset
+        </div>
         <div class="sc" id="sCard">
           <button id="sTog" class="sh keep" type="button">
             <svg class="ic"><use href="#i-gear" /></svg><span>Settings</span
@@ -281,13 +292,13 @@
           <div class="bgrp">
             <div class="bgt">Animation setting</div>
             <div class="bgr">
-              <button id="rs" class="p">
+              <button title="Reset (R)" id="rs" class="p">
                 <svg class="ic"><use href="#i-refresh" /></svg> Reset</button
-              ><button id="bk">
+              ><button title="Back one step (Left arrow)" id="bk">
                 <svg class="ic"><use href="#i-prev" /></svg> Step</button
-              ><button id="pl" class="p">
+              ><button title="Play / Pause (Space)" id="pl" class="p">
                 <svg class="ic"><use href="#i-play" /></svg> Play</button
-              ><button id="fw">
+              ><button title="Next step (Right arrow)" id="fw">
                 Step <svg class="ic"><use href="#i-next" /></svg></button
               ><label
                 >Speed
@@ -355,13 +366,13 @@
           <div class="bgrp">
             <div class="bgt">Animation setting</div>
             <div class="bgr">
-              <button id="bRs" class="p">
+              <button title="Reset (R)" id="bRs" class="p">
                 <svg class="ic"><use href="#i-refresh" /></svg> Reset</button
-              ><button id="bBk">
+              ><button title="Back one step (Left arrow)" id="bBk">
                 <svg class="ic"><use href="#i-prev" /></svg> Step</button
-              ><button id="bPl" class="p">
+              ><button title="Play / Pause (Space)" id="bPl" class="p">
                 <svg class="ic"><use href="#i-play" /></svg> Play</button
-              ><button id="bFw">
+              ><button title="Next step (Right arrow)" id="bFw">
                 Step <svg class="ic"><use href="#i-next" /></svg></button
               ><label
                 >Speed
@@ -433,15 +444,15 @@
           <div class="bgrp">
             <div class="bgt">Animation setting</div>
             <div class="bgr">
-              <button id="gRun" class="p">
+              <button title="Reset (R)" id="gRun" class="p">
                 <svg class="ic"><use href="#i-refresh" /></svg> Run</button
               ><button id="gSave">
                 <svg class="ic"><use href="#i-save" /></svg> Save as new</button
-              ><button id="gBk">
+              ><button title="Back one step (Left arrow)" id="gBk">
                 <svg class="ic"><use href="#i-prev" /></svg> Step</button
-              ><button id="gPl" class="p">
+              ><button title="Play / Pause (Space)" id="gPl" class="p">
                 <svg class="ic"><use href="#i-play" /></svg> Play</button
-              ><button id="gFw">
+              ><button title="Next step (Right arrow)" id="gFw">
                 Step <svg class="ic"><use href="#i-next" /></svg></button
               ><label
                 >Speed
@@ -501,6 +512,95 @@
           <div class="card">
             <h2>Step log (click any step to jump to it)</h2>
             <div id="gLog" class="lgb"></div>
+          </div>
+        </div>
+      </section>
+      <section id="pg-hil" class="pg">
+        <div class="bar">
+          <h1>
+            <svg class="ic ic-lg"><use href="#i-curve" /></svg>
+            <span id="tHil">Hilbert Curve</span>
+          </h1>
+          <div class="bgrp">
+            <div class="bgt">Animation setting</div>
+            <div class="bgr">
+              <button title="Reset (R)" id="hlRs" class="p">
+                <svg class="ic"><use href="#i-refresh" /></svg> Reset</button
+              ><button title="Back one step (Left arrow)" id="hlBk">
+                <svg class="ic"><use href="#i-prev" /></svg> Step</button
+              ><button title="Play / Pause (Space)" id="hlPl" class="p">
+                <svg class="ic"><use href="#i-play" /></svg> Play</button
+              ><button title="Next step (Right arrow)" id="hlFw">
+                Step <svg class="ic"><use href="#i-next" /></svg></button
+              ><label
+                >Speed
+                <input
+                  id="hlSp"
+                  type="range"
+                  min="0.25"
+                  max="4"
+                  step="0.25"
+                  value="1"
+              /></label>
+              <label
+                >Position
+                <input
+                  id="hlScrub"
+                  type="range"
+                  min="0"
+                  max="0"
+                  step="1"
+                  value="0"
+              /></label>
+            </div>
+          </div>
+          <div class="bgrp">
+            <div class="bgt">Variables</div>
+            <div class="bgr">
+              <label
+                >Order h
+                <input id="hlN" type="number" min="0" max="12" value="3"
+              /></label>
+            </div>
+          </div>
+          <span id="hlCnt" style="color: var(--mut)"></span>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h2>
+              Curve – highlighted square = area of the current call · dashed
+              squares = its callers · black arrow = end of the line so far
+            </h2>
+            <div id="hlInfo"></div>
+            <canvas
+              id="hlCv"
+              width="1000"
+              height="1000"
+              role="img"
+              aria-label="Hilbert curve"
+            ></canvas>
+          </div>
+          <div class="card">
+            <h2>
+              Call tree (top levels; deeper calls fold into their ancestor)
+            </h2>
+            <div id="hlTB" class="tb"><svg id="hlTree"></svg></div>
+            <div class="leg">
+              <span><i style="background: var(--pend)"></i>Not called yet</span
+              ><span><i style="background: var(--act)"></i>Current call</span
+              ><span
+                ><i style="background: var(--rel)"></i>Related (call
+                stack)</span
+              ><span><i style="background: var(--done)"></i>Finished</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Call stack – each call with its quadrant and transform</h2>
+            <div id="hlStack" class="stk"></div>
+          </div>
+          <div class="card">
+            <h2>Step log (click any step to jump to it)</h2>
+            <div id="hlLog" class="lgb"></div>
           </div>
         </div>
       </section>
