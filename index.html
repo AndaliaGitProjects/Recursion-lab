@@ -8,6 +8,37 @@
     />
     <title>Recursion Lab</title>
     <link rel="stylesheet" href="css/style.css" />
+    <script>
+      /* Apply saved theme / corner / accent / glass / iOS look + page BEFORE first paint
+         (prevents the light/dark/accent flash on refresh). */
+      ;(function () {
+        try {
+          var s = JSON.parse(localStorage.getItem("rl_state") || "{}"),
+            d = document.documentElement,
+            A = {
+              blue: "#5b8def",
+              violet: "#8b6cf0",
+              cyan: "#22b8cf",
+              pink: "#e5609c",
+              slate: "#6b7a99",
+            }
+          d.dataset.theme =
+            s.theme ||
+            (matchMedia("(prefers-color-scheme:dark)").matches
+              ? "dark"
+              : "light")
+          d.dataset.corner = s.cv === 2 && s.corner ? s.corner : "squircle"
+          if (A[s.accent]) d.style.setProperty("--rel", A[s.accent])
+          if (typeof s.alpha === "number") d.style.setProperty("--ga", s.alpha)
+          if (s.ios === true) d.setAttribute("data-ios", "")
+          var p = s.page || "hanoi"
+          d.setAttribute(
+            "data-boot",
+            p === "hanoi" || p === "bsearch" || p === "hilbert" ? p : "gen",
+          )
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
@@ -191,6 +222,13 @@
                   step="0.02"
                   value="0.6"
                 />
+              </div>
+              <div class="sr">
+                <label>iOS glass 3D</label>
+                <div class="seg" id="segIos">
+                  <button class="keep" data-v="1">On</button
+                  ><button class="keep" data-v="0">Off</button>
+                </div>
               </div>
               <div class="sr">
                 <label>Corner shape</label>
@@ -466,24 +504,28 @@
               /></label>
             </div>
           </div>
+          <div class="bgrp">
+            <div class="bgt">Variables</div>
+            <div class="bgr">
+              <label
+                >Call
+                <input
+                  id="gCall"
+                  style="
+                    width: 220px;
+                    max-width: 100%;
+                    font-family: ui-monospace, Consolas, monospace;
+                  "
+                  spellcheck="false" /></label
+              ><span id="gErr" style="color: var(--D)"></span>
+            </div>
+          </div>
           <span id="gCnt" style="color: var(--mut)"></span>
         </div>
         <div class="grid">
           <div class="card full">
             <h2 id="gDesc"></h2>
             <textarea id="gCode" spellcheck="false" rows="4"></textarea>
-            <div class="row">
-              <label
-                >Call:
-                <input
-                  id="gCall"
-                  style="
-                    width: 260px;
-                    font-family: ui-monospace, Consolas, monospace;
-                  "
-                  spellcheck="false" /></label
-              ><span id="gErr" style="color: var(--D)"></span>
-            </div>
           </div>
           <div class="card full">
             <h2>

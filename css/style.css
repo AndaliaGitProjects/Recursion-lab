@@ -21,6 +21,9 @@
   --D: #df5468;
   --peg: #9aa5bd;
   --shadow: 0 10px 32px rgba(40, 60, 120, 0.12);
+  --scroll-track: color-mix(in srgb, var(--rel) 10%, transparent);
+  --scroll-thumb: color-mix(in srgb, var(--rel) 64%, transparent);
+  --scroll-thumb-hover: var(--rel);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -57,6 +60,29 @@ html {
 }
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+}
+*::-webkit-scrollbar-thumb {
+  min-height: 42px;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--scroll-thumb);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 html,
 body {
@@ -514,6 +540,13 @@ textarea {
   margin-bottom: 8px;
   background: color-mix(in srgb, var(--act) 10%, transparent);
 }
+#sub {
+  box-sizing: border-box;
+  height: 52px; /* fixed: ~2 lines */
+  line-height: 1.45;
+  overflow-y: auto;
+  flex: none;
+}
 #stage {
   position: relative;
   flex: 1;
@@ -646,17 +679,28 @@ textarea {
   margin-top: 8px;
 }
 .rc {
-  border: 1px solid var(--bd);
+  border: 0;
   border-radius: 12px;
-  padding: 5px 8px;
+  padding: 7px 10px;
   text-align: center;
-  border-top: 3px solid var(--c);
-  background: var(--field);
+  background: color-mix(in srgb, var(--c) 11%, transparent);
 }
 .rc small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   color: var(--mut);
-  display: block;
   font-size: 11px;
+  font-weight: 600;
+}
+.rc small::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c);
 }
 .rc div {
   font-size: 16px;
@@ -1431,6 +1475,10 @@ body::before {
   margin-bottom: 8px;
   background: color-mix(in srgb, var(--act) 10%, transparent);
   flex: none;
+  box-sizing: border-box;
+  height: 52px; /* fixed: ~2 lines */
+  line-height: 1.45;
+  overflow-y: auto;
 }
 #hlCv {
   flex: 1;
@@ -1486,4 +1534,405 @@ kbd {
   border: 1px solid var(--bd);
   background: var(--field);
   color: var(--txt);
+}
+
+/* ===== No page flash on refresh: show the saved page before JS runs ===== */
+html[data-boot]:not([data-boot="hanoi"]) #pg-hanoi {
+  display: none;
+}
+html[data-boot="bsearch"] #pg-bs,
+html[data-boot="hilbert"] #pg-hil,
+html[data-boot="gen"] #pg-gen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ===== Toolbar as separate cards in one row ===== */
+.bar {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+  margin: 12px 12px 0;
+  gap: 12px;
+  align-items: stretch;
+}
+.bar h1,
+.bgrp,
+.bar > span:not(:empty) {
+  background: rgba(var(--panel-rgb), var(--ga));
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid var(--bd);
+  box-shadow: var(--shadow);
+  border-radius: var(--r-lg);
+}
+.bar h1 {
+  margin: 0;
+  padding: 0 18px;
+  align-self: stretch;
+  white-space: nowrap;
+}
+.bgrp {
+  padding: 8px 14px 10px;
+}
+.bar > span:not(:empty) {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+@supports (corner-shape: squircle) {
+  html[data-corner="squircle"] :is(.bar h1, .bgrp, .bar > span:not(:empty)) {
+    corner-shape: squircle;
+    border-radius: calc(var(--r-lg) * 1.6);
+  }
+}
+@media (max-width: 800px) {
+  .bar h1 {
+    flex: 1 0 100%;
+    padding: 10px 14px;
+  }
+  .bgrp {
+    flex: 1 1 100%;
+  }
+}
+
+/* ===== iOS glass 3D theme (Settings -> iOS glass 3D) ===== */
+html[data-ios] {
+  --ios-top: rgba(255, 255, 255, 0.6);
+  --ios-mid: rgba(255, 255, 255, 0.2);
+  --ios-hi: rgba(255, 255, 255, 0.8);
+  --ios-line: rgba(255, 255, 255, 0.5);
+  --ios-in: rgba(255, 255, 255, 0.5);
+  --ios-sh:
+    0 1px 1px rgba(20, 30, 70, 0.1), 0 8px 18px rgba(20, 30, 70, 0.12),
+    0 26px 60px rgba(20, 30, 70, 0.16);
+}
+html[data-ios][data-theme="dark"] {
+  --ios-top: rgba(255, 255, 255, 0.2);
+  --ios-mid: rgba(255, 255, 255, 0.05);
+  --ios-hi: rgba(255, 255, 255, 0.32);
+  --ios-line: rgba(255, 255, 255, 0.16);
+  --ios-in: rgba(0, 0, 0, 0.3);
+  --ios-sh:
+    0 1px 1px rgba(0, 0, 0, 0.45), 0 10px 22px rgba(0, 0, 0, 0.35),
+    0 30px 70px rgba(0, 0, 0, 0.5);
+}
+
+/* vivid wallpaper so the glass has something to refract */
+html[data-ios] body {
+  background:
+    radial-gradient(
+      560px 440px at 8% 6%,
+      rgba(255, 120, 175, 0.5),
+      transparent 70%
+    ),
+    radial-gradient(
+      640px 480px at 92% 10%,
+      rgba(90, 145, 255, 0.55),
+      transparent 70%
+    ),
+    radial-gradient(
+      680px 520px at 86% 96%,
+      rgba(60, 220, 175, 0.42),
+      transparent 70%
+    ),
+    radial-gradient(
+      560px 440px at 6% 94%,
+      rgba(175, 125, 255, 0.45),
+      transparent 70%
+    ),
+    linear-gradient(160deg, var(--bg1), var(--bg2));
+}
+html[data-ios][data-theme="dark"] body {
+  background:
+    radial-gradient(
+      560px 440px at 8% 6%,
+      rgba(255, 90, 150, 0.3),
+      transparent 70%
+    ),
+    radial-gradient(
+      640px 480px at 92% 10%,
+      rgba(70, 120, 255, 0.38),
+      transparent 70%
+    ),
+    radial-gradient(
+      680px 520px at 86% 96%,
+      rgba(40, 190, 150, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      560px 440px at 6% 94%,
+      rgba(150, 100, 255, 0.32),
+      transparent 70%
+    ),
+    linear-gradient(160deg, var(--bg1), var(--bg2));
+}
+html[data-ios] body::before {
+  display: none;
+}
+
+/* glass panels: layered sheen, pointer-following highlight, thick bevel */
+html[data-ios] :is(.card, #side, .sc, .bar h1, .bgrp, .bar > span:not(:empty)) {
+  background:
+    linear-gradient(180deg, var(--ios-mid), rgba(255, 255, 255, 0) 42%),
+    rgba(var(--panel-rgb), calc(var(--ga) * 0.8));
+  backdrop-filter: blur(30px) saturate(190%) brightness(1.04);
+  -webkit-backdrop-filter: blur(30px) saturate(190%) brightness(1.04);
+  border: 1px solid var(--ios-line);
+  box-shadow:
+    var(--ios-sh),
+    inset 0 1.5px 0 var(--ios-hi),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    inset 1px 0 0 rgba(255, 255, 255, 0.22),
+    inset -1px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 26px rgba(255, 255, 255, 0.06);
+}
+html[data-ios] .rc {
+  transform: perspective(700px) rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg));
+  transition: transform 0.2s ease-out;
+}
+
+/* cursor "fog": small, fades in on enter and out on leave (cards + sidebar only) */
+@property --fog {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+html[data-ios] :is(.card, #side) {
+  --fog-a: 0.34;
+  background:
+    radial-gradient(
+      circle 100px at var(--mx, 50%) var(--my, 50%),
+      rgba(255, 255, 255, calc(var(--fog) * var(--fog-a))),
+      transparent 100%
+    ),
+    linear-gradient(180deg, var(--ios-mid), rgba(255, 255, 255, 0) 42%),
+    rgba(var(--panel-rgb), calc(var(--ga) * 0.8));
+  transition:
+    --fog 0.45s ease,
+    box-shadow 0.25s;
+}
+html[data-ios][data-theme="dark"] :is(.card, #side) {
+  --fog-a: 0.13;
+}
+html[data-ios] :is(.card, #side):hover {
+  --fog: 1;
+}
+html[data-ios] #side.anim {
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    --fog 0.45s ease;
+}
+html[data-ios] .card:hover {
+  box-shadow:
+    0 2px 2px rgba(20, 30, 70, 0.1),
+    0 14px 28px rgba(20, 30, 70, 0.16),
+    0 34px 70px rgba(20, 30, 70, 0.2),
+    inset 0 1.5px 0 var(--ios-hi),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    inset 1px 0 0 rgba(255, 255, 255, 0.22);
+}
+html[data-ios] #side .sc,
+html[data-ios] .sc {
+  box-shadow:
+    0 1px 1px rgba(20, 30, 70, 0.08),
+    0 6px 14px rgba(20, 30, 70, 0.1),
+    inset 0 1.5px 0 var(--ios-hi),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+html[data-ios] .sc .sh {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* glossy 3D buttons */
+html[data-ios] button {
+  background:
+    linear-gradient(
+      180deg,
+      var(--ios-top),
+      var(--ios-mid) 55%,
+      rgba(255, 255, 255, 0)
+    ),
+    var(--field);
+  border: 1px solid var(--ios-line);
+  border-radius: 999px;
+  box-shadow:
+    0 1px 2px rgba(20, 30, 70, 0.18),
+    0 6px 14px rgba(20, 30, 70, 0.1),
+    inset 0 1.5px 0 var(--ios-hi),
+    inset 0 -2px 4px rgba(20, 30, 70, 0.07);
+}
+html[data-ios] button:hover:not(:disabled) {
+  border-color: var(--ios-hi);
+  filter: brightness(1.06) saturate(1.1);
+}
+html[data-ios] button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+  box-shadow:
+    0 1px 1px rgba(20, 30, 70, 0.15),
+    inset 0 2px 5px rgba(20, 30, 70, 0.22);
+}
+html[data-ios] button.p {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--rel) 62%, #fff) 0%,
+    var(--rel) 52%,
+    color-mix(in srgb, var(--rel) 82%, #000) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--rel) 60%, #fff);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    0 8px 18px color-mix(in srgb, var(--rel) 45%, transparent),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* inset glass fields */
+html[data-ios] :is(input:not([type="range"]), textarea) {
+  background: var(--ios-in);
+  border: 1px solid var(--ios-line);
+  box-shadow:
+    inset 0 2px 5px rgba(20, 30, 70, 0.16),
+    0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* segmented control: sunken track + raised glossy thumb */
+html[data-ios] .seg {
+  background: rgba(120, 130, 165, 0.2);
+  border-color: transparent;
+  box-shadow:
+    inset 0 2px 5px rgba(20, 30, 70, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.35);
+}
+html[data-ios] .seg button {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  filter: none;
+  border-radius: max(calc(var(--r-md) - 3px), 2px);
+}
+html[data-ios] .seg button.on {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--rel) 62%, #fff),
+    var(--rel) 55%,
+    color-mix(in srgb, var(--rel) 85%, #000)
+  );
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 3px 8px color-mix(in srgb, var(--rel) 45%, transparent),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.16);
+}
+/* accent swatches as glass beads */
+html[data-ios] .sw button {
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background:
+    radial-gradient(
+      circle at 32% 26%,
+      rgba(255, 255, 255, 0.85),
+      transparent 52%
+    ),
+    var(--c);
+  box-shadow:
+    0 3px 8px color-mix(in srgb, var(--c) 50%, transparent),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.22);
+}
+
+/* sidebar items */
+html[data-ios] #side a:hover {
+  background:
+    linear-gradient(180deg, var(--ios-mid), transparent), var(--field);
+  box-shadow: inset 0 1px 0 var(--ios-hi);
+}
+html[data-ios] #side a.on {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--rel) 62%, #fff),
+    var(--rel) 55%,
+    color-mix(in srgb, var(--rel) 85%, #000)
+  );
+  box-shadow:
+    0 6px 14px color-mix(in srgb, var(--rel) 40%, transparent),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.16);
+}
+
+/* info chips + role cards */
+html[data-ios] :is(.rc, #sub, #gInfo, #bInfo, #hlInfo) {
+  background-image: linear-gradient(
+    180deg,
+    var(--ios-top),
+    rgba(255, 255, 255, 0) 70%
+  );
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  box-shadow:
+    0 4px 12px rgba(20, 30, 70, 0.1),
+    inset 0 1.5px 0 var(--ios-hi),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+html[data-ios] .rc {
+  border: 1px solid var(--ios-line);
+}
+
+/* glossy gel disks, pegs and base */
+html[data-ios] .disk {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0) 52%,
+    rgba(0, 0, 0, 0.18)
+  );
+  box-shadow:
+    0 7px 14px rgba(20, 30, 70, 0.3),
+    inset 0 2px 3px rgba(255, 255, 255, 0.7),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.28);
+}
+html[data-ios] .disk.mv {
+  box-shadow:
+    0 0 0 3px var(--act),
+    0 14px 26px rgba(20, 30, 70, 0.4),
+    inset 0 2px 3px rgba(255, 255, 255, 0.7),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.28);
+}
+html[data-ios] .disk.dim {
+  box-shadow: none;
+}
+html[data-ios] .peg,
+html[data-ios] .base {
+  box-shadow:
+    2px 3px 8px rgba(20, 30, 70, 0.25),
+    inset 1px 0 0 rgba(255, 255, 255, 0.45);
+}
+
+/* ===== navbar: every child has the same height at any screen width ===== */
+.bar > * {
+  min-height: var(--bar-h, 0px);
+}
+.bgrp {
+  justify-content: center;
+}
+/* temporary state used by JS to measure natural heights */
+.bar.eqm {
+  align-items: flex-start !important;
+}
+.bar.eqm > * {
+  align-self: flex-start !important;
+  min-height: 0 !important;
 }

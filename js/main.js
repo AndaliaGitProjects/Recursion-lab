@@ -17,6 +17,7 @@ let ST = {
   corner: "squircle",
   accent: "blue",
   setOpen: false,
+  ios: false,
 }
 try {
   Object.assign(ST, JSON.parse(localStorage.getItem("rl_state") || "{}"))
@@ -2015,6 +2016,12 @@ function applyUI() {
   document
     .querySelectorAll("#swA button")
     .forEach((b) => b.classList.toggle("on", b.dataset.c === ST.accent))
+  d.toggleAttribute("data-ios", !!ST.ios)
+  document
+    .querySelectorAll("#segIos button")
+    .forEach((b) =>
+      b.classList.toggle("on", (b.dataset.v === "1") === !!ST.ios),
+    )
   $("sCard").classList.toggle("open", !!ST.setOpen)
   $("glv").textContent = Math.round(ST.alpha * 100) + "%"
 }
@@ -2026,6 +2033,37 @@ $("segTh").onclick = (e) => {
     persist()
   }
 }
+$("segIos").onclick = (e) => {
+  const b = e.target.closest("button")
+  if (b) {
+    ST.ios = b.dataset.v === "1"
+    applyUI()
+    persist()
+  }
+}
+/* iOS glass 3D: moving specular highlight + small tilt under the pointer */
+let glassHot = null
+const GLASS = ".card,#side,.rc",
+  TILT = ".rc"
+document.addEventListener("pointermove", (e) => {
+  if (!ST.ios) return
+  const t = e.target.closest ? e.target.closest(GLASS) : null
+  if (glassHot && glassHot !== t) {
+    glassHot.style.removeProperty("--rx")
+    glassHot.style.removeProperty("--ry")
+  }
+  glassHot = t
+  if (!t) return
+  const r = t.getBoundingClientRect(),
+    x = (e.clientX - r.left) / r.width,
+    y = (e.clientY - r.top) / r.height
+  t.style.setProperty("--mx", e.clientX - r.left + "px")
+  t.style.setProperty("--my", e.clientY - r.top + "px")
+  if (t.matches(TILT)) {
+    t.style.setProperty("--rx", ((0.5 - y) * 8).toFixed(2) + "deg")
+    t.style.setProperty("--ry", ((x - 0.5) * 10).toFixed(2) + "deg")
+  }
+})
 $("segCo").onclick = (e) => {
   const b = e.target.closest("button")
   if (b) {
@@ -2126,3 +2164,29 @@ bSpeed = +SAVED.bs.sp
 let p0 = SAVED.page
 if (p0[0] === "m" && !findM(+p0.slice(1))) p0 = "hanoi"
 showPage(p0, true)
+document.documentElement.removeAttribute("data-boot")
+
+/* navbar: keep every child the same height whenever the width changes */
+function eqBar(bar) {
+  if (!bar.offsetParent) return
+  bar.classList.add("eqm")
+  let h = 0
+  for (const c of bar.children) h = Math.max(h, c.offsetHeight)
+  bar.classList.remove("eqm")
+  bar.style.setProperty("--bar-h", h + "px")
+}
+const barW = new WeakMap(),
+  barRO = new ResizeObserver((es) => {
+    for (const e of es) {
+      const w = Math.round(e.contentRect.width)
+      if (barW.get(e.target) !== w) {
+        barW.set(e.target, w)
+        eqBar(e.target)
+      }
+    }
+  })
+document.querySelectorAll(".bar").forEach((b) => barRO.observe(b))
+if (document.fonts && document.fonts.ready)
+  document.fonts.ready.then(() =>
+    document.querySelectorAll(".bar").forEach(eqBar),
+  )
