@@ -1183,11 +1183,23 @@ html[data-corner="squircle"] {
 }
 .card,
 #side,
+#gTitle,
 .bar,
+.bgrp,
 .dev-dialog,
+#gCnt,
+#hlCnt,
 .sc {
-  border-radius: var(--r-lg);
+  border-radius: var(--r-lg) !important;
 }
+
+.bar > * {
+  border-radius: var(--r-lg) !important;
+  box-shadow:
+    var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+
 button,
 input,
 textarea,
@@ -1694,4 +1706,8 @@ html[data-boot="gen"] #pg-gen {
   .bar > span:not(:empty) {
     justify-content: flex-start;
   }
+}
+
+aside {
+  scrollbar-color: var(--scroll-thumb) transparent !important;
 }
