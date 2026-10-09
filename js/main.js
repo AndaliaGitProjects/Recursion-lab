@@ -17,7 +17,6 @@ let ST = {
   corner: "squircle",
   accent: "blue",
   setOpen: false,
-  ios: false,
 }
 try {
   Object.assign(ST, JSON.parse(localStorage.getItem("rl_state") || "{}"))
@@ -2016,12 +2015,6 @@ function applyUI() {
   document
     .querySelectorAll("#swA button")
     .forEach((b) => b.classList.toggle("on", b.dataset.c === ST.accent))
-  d.toggleAttribute("data-ios", !!ST.ios)
-  document
-    .querySelectorAll("#segIos button")
-    .forEach((b) =>
-      b.classList.toggle("on", (b.dataset.v === "1") === !!ST.ios),
-    )
   $("sCard").classList.toggle("open", !!ST.setOpen)
   $("glv").textContent = Math.round(ST.alpha * 100) + "%"
 }
@@ -2033,37 +2026,6 @@ $("segTh").onclick = (e) => {
     persist()
   }
 }
-$("segIos").onclick = (e) => {
-  const b = e.target.closest("button")
-  if (b) {
-    ST.ios = b.dataset.v === "1"
-    applyUI()
-    persist()
-  }
-}
-/* iOS glass 3D: moving specular highlight + small tilt under the pointer */
-let glassHot = null
-const GLASS = ".card,#side,.rc",
-  TILT = ".rc"
-document.addEventListener("pointermove", (e) => {
-  if (!ST.ios) return
-  const t = e.target.closest ? e.target.closest(GLASS) : null
-  if (glassHot && glassHot !== t) {
-    glassHot.style.removeProperty("--rx")
-    glassHot.style.removeProperty("--ry")
-  }
-  glassHot = t
-  if (!t) return
-  const r = t.getBoundingClientRect(),
-    x = (e.clientX - r.left) / r.width,
-    y = (e.clientY - r.top) / r.height
-  t.style.setProperty("--mx", e.clientX - r.left + "px")
-  t.style.setProperty("--my", e.clientY - r.top + "px")
-  if (t.matches(TILT)) {
-    t.style.setProperty("--rx", ((0.5 - y) * 8).toFixed(2) + "deg")
-    t.style.setProperty("--ry", ((x - 0.5) * 10).toFixed(2) + "deg")
-  }
-})
 $("segCo").onclick = (e) => {
   const b = e.target.closest("button")
   if (b) {

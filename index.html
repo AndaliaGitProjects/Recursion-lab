@@ -9,7 +9,7 @@
     <title>Recursion Lab</title>
     <link rel="stylesheet" href="css/style.css" />
     <script>
-      /* Apply saved theme / corner / accent / glass / iOS look + page BEFORE first paint
+      /* Apply saved theme / corner / accent / glass / page BEFORE first paint
          (prevents the light/dark/accent flash on refresh). */
       ;(function () {
         try {
@@ -30,7 +30,6 @@
           d.dataset.corner = s.cv === 2 && s.corner ? s.corner : "squircle"
           if (A[s.accent]) d.style.setProperty("--rel", A[s.accent])
           if (typeof s.alpha === "number") d.style.setProperty("--ga", s.alpha)
-          if (s.ios === true) d.setAttribute("data-ios", "")
           var p = s.page || "hanoi"
           d.setAttribute(
             "data-boot",
@@ -222,13 +221,6 @@
                   step="0.02"
                   value="0.6"
                 />
-              </div>
-              <div class="sr">
-                <label>iOS glass 3D</label>
-                <div class="seg" id="segIos">
-                  <button class="keep" data-v="1">On</button
-                  ><button class="keep" data-v="0">Off</button>
-                </div>
               </div>
               <div class="sr">
                 <label>Corner shape</label>
