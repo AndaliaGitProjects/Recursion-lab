@@ -251,27 +251,87 @@ function showRoles(e, prev) {
     })
     .join("")
 }
+/* ---------- call-card nodes shared by every tree ----------
+   line 1: call(args) = expansion      line 2: value, filled in when the call finishes */
+const cvx = document.createElement("canvas").getContext("2d"),
+  tw = (t, f) => {
+    cvx.font = f
+    return cvx.measureText(t).width
+  },
+  CF1 = "600 12px ui-monospace,Consolas,monospace",
+  CF2 = "700 11px ui-monospace,Consolas,monospace",
+  CH = 58,
+  cEsc = (t) =>
+    String(t).replace(
+      /[&<>]/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
+    ),
+  cardW = (call, ex, val) =>
+    Math.max(
+      56,
+      tw(call + (ex ? " =" : ""), CF1) + 24,
+      ex ? tw(ex, CF1) + 24 : 0,
+      tw("= " + val, CF2) + 24,
+    ),
+  cardSvg = (id, vid, tip, cx, cy, w, call, ex) =>
+    `<g class="nd pen" id="${id}"><title>${cEsc(tip)}</title><rect x="${cx - w / 2}" y="${cy - CH / 2}" width="${w}" height="${CH}" rx="10"/>` +
+    `<text class="n" x="${cx}" y="${ex ? cy - 13 : cy - 6}" text-anchor="middle" style="font-size:12px">${cEsc(call)}${ex ? " =" : ""}</text>` +
+    (ex
+      ? `<text class="n ex" x="${cx}" y="${cy + 3}" text-anchor="middle" style="font-size:12px">${cEsc(ex)}</text>`
+      : "") +
+    `<text class="rv" id="${vid}" x="${cx}" y="${ex ? cy + 19 : cy + 10}" text-anchor="middle"></text></g>`
 /* ---------- tree ---------- */
-const CW = 56,
-  LH = 64
+let CW = 56,
+  TOFF = 0
+const LH = 92
 function mkTree() {
-  const svg = $("tree"),
-    w = Math.pow(2, N) * CW,
+  const svg = $("tree")
+  nodes.forEach((nd) => (nd.ch = []))
+  nodes.forEach((nd) => nd.par >= 0 && nodes[nd.par].ch.push(nd))
+  nodes.forEach((nd) => {
+    const mv = `move ${nd.k}: ${L[nd.s]}→${L[nd.d]}`
+    nd.call = fn(nd)
+    nd.ex = nd.k > 1 ? `${fn(nd.ch[0])} + ${mv} + ${fn(nd.ch[1])}` : mv
+    const m = Math.pow(2, nd.k) - 1
+    nd.val = `= ${m} move${m > 1 ? "s" : ""}`
+    nd.w = cardW(nd.call, nd.ex, nd.val)
+  })
+  /* same-depth neighbours are 2^k columns apart: size a column so the widest card fits */
+  CW = 56
+  nodes.forEach((nd) => {
+    CW = Math.max(CW, Math.ceil((nd.w + 12) / Math.pow(2, nd.k)))
+  })
+  /* cards can be wider than their column: shift the tree so none is clipped */
+  const x0 = (nd) => nd.x * CW + CW / 2
+  TOFF = Math.max(0, 10 - Math.min(...nodes.map((nd) => x0(nd) - nd.w / 2)))
+  const w = Math.max(
+      Math.pow(2, N) * CW + TOFF,
+      Math.max(...nodes.map((nd) => x0(nd) + nd.w / 2)) + TOFF + 10,
+    ),
     h = N * LH + 56
   let s = ""
   svg.setAttribute("width", w)
   svg.setAttribute("height", h)
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`)
-  const X = (nd) => nd.x * CW + CW / 2,
-    Y = (nd) => nd.dep * LH + 30
+  const X = (nd) => x0(nd) + TOFF,
+    Y = (nd) => nd.dep * LH + 40
   nodes.forEach((nd, i) => {
     if (nd.par >= 0) {
       const p = nodes[nd.par]
-      s += `<path class="ed" id="ed${i}" d="M${X(p)} ${Y(p) + 19} C${X(p)} ${(Y(p) + Y(nd)) / 2},${X(nd)} ${(Y(p) + Y(nd)) / 2},${X(nd)} ${Y(nd) - 19}"/>`
+      s += `<path class="ed" id="ed${i}" d="M${X(p)} ${Y(p) + CH / 2} C${X(p)} ${(Y(p) + Y(nd)) / 2},${X(nd)} ${(Y(p) + Y(nd)) / 2},${X(nd)} ${Y(nd) - CH / 2}"/>`
     }
   })
   nodes.forEach((nd, i) => {
-    s += `<g class="nd pen" id="nd${i}"><title>${fn(nd)}</title><rect x="${X(nd) - 24}" y="${Y(nd) - 19}" width="48" height="38" rx="10"/><text class="n" style="font-size:14px" x="${X(nd)}" y="${Y(nd) - 2}" text-anchor="middle">${nd.k}</text><text class="l" x="${X(nd)}" y="${Y(nd) + 12}" text-anchor="middle">${L[nd.s]}→${L[nd.d]}</text></g>`
+    s += cardSvg(
+      "nd" + i,
+      "nv" + i,
+      nd.call + " = " + nd.ex + " " + nd.val,
+      X(nd),
+      Y(nd),
+      nd.w,
+      nd.call,
+      nd.ex,
+    )
   })
   svg.innerHTML = s
 }
@@ -283,6 +343,7 @@ function showTree(e) {
     if (e.done.has(i)) c = "done"
     else if (e.stack.includes(i)) c = t === nd ? "act" : "rel"
     g.setAttribute("class", "nd " + c)
+    $("nv" + i).textContent = c === "done" ? nd.val : ""
     const ed = $("ed" + i)
     if (ed)
       ed.setAttribute(
@@ -292,7 +353,7 @@ function showTree(e) {
   })
   if (t) {
     const b = $("treebox"),
-      x = t.x * CW + CW / 2
+      x = t.x * CW + CW / 2 + TOFF
     b.scrollTo({
       left: x - b.clientWidth / 2,
       top: t.dep * LH + 30 - b.clientHeight / 2,
@@ -897,28 +958,242 @@ function gSaveNew() {
   saveMine()
   side()
 }
-const GH = 78,
-  cvx = document.createElement("canvas").getContext("2d")
-const tw = (t, f) => {
-  cvx.font = f
-  return cvx.measureText(t).width
-}
+const GH = 100
 const fmtR = (v) => {
   const s = fmt(v)
   return s.length > 80 ? s.slice(0, 79) + "…" : s
 }
-/* variable-width tidy layout: every node is as wide as its full label */
-function gLay() {
-  gN.forEach((n) => {
-    n.lb = n.args.map(fmt).join(", ")
-    n.rv = fmtR(n.ret)
-    n.w = Math.max(
-      44,
-      tw(n.lb, "600 12px ui-monospace,Consolas,monospace") + 24,
+/* ---- expansion text for generic nodes, e.g.  fact(5) = 5 * fact(4)  ---- */
+const gClose = (e, o) => {
+  let d = 0,
+    q = null
+  for (let i = o; i < e.length; i++) {
+    const c = e[i]
+    if (q) {
+      if (c === "\\") i++
+      else if (c === q) q = null
+    } else if (c === '"' || c === "'" || c === "`") q = c
+    else if ("([{".includes(c)) d++
+    else if (")]}".includes(c) && --d === 0) return i
+  }
+  return e.length - 1
+}
+function gReadExpr(s, i) {
+  let d = 0,
+    q = null,
+    j = i
+  for (; j < s.length; j++) {
+    const c = s[j]
+    if (q) {
+      if (c === "\\") j++
+      else if (c === q) q = null
+      continue
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      q = c
+      continue
+    }
+    if ("([{".includes(c)) d++
+    else if (")]}".includes(c)) {
+      if (d === 0) break
+      d--
+    } else if (d === 0 && c === ";") break
+    else if (d === 0 && c === "\n") {
+      const cur = s.slice(i, j).trimEnd(),
+        nx = s.slice(j).trimStart()[0] || ""
+      if (
+        cur &&
+        !/[+\-*/%&|?:,=<>!]$/.test(cur) &&
+        !/^[+\-*/%&|?:.,=<>]/.test(nx)
+      )
+        break
+    }
+  }
+  return s.slice(i, j).trim()
+}
+/* find params + every `return <expr>` of the traced function */
+function gParse(code, name) {
+  const nm = name.replace(/\$/g, "\\$"),
+    plain = code
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1")
+  let ps = null,
+    rets = []
+  let m = plain.match(
+    new RegExp("function\\s*\\*?\\s*" + nm + "\\s*\\(([^)]*)\\)\\s*\\{"),
+  )
+  let body = null
+  if (m) {
+    ps = m[1]
+    const o = m.index + m[0].length - 1
+    body = plain.slice(o + 1, gClose(plain, o))
+  } else {
+    m = plain.match(
+      new RegExp(
+        "(?:const|let|var)\\s+" +
+          nm +
+          "\\s*=\\s*(?:async\\s*)?(?:\\(([^)]*)\\)|([A-Za-z_$][\\w$]*))\\s*=>\\s*",
+      ),
     )
-    n.rw = tw("= " + n.rv, "700 11px ui-monospace,Consolas,monospace")
+    if (!m) return null
+    ps = m[1] !== undefined ? m[1] : m[2]
+    const o = m.index + m[0].length
+    if (plain[o] === "{") body = plain.slice(o + 1, gClose(plain, o))
+    else rets.push(gReadExpr(plain, o))
+  }
+  if (body !== null) {
+    const re = /\breturn\b/g
+    let r
+    while ((r = re.exec(body))) {
+      const e = gReadExpr(body, r.index + 6)
+      if (e) rets.push(e)
+    }
+  }
+  const names = ps
+    .split(",")
+    .map((p) => p.replace(/=[\s\S]*$/, "").trim())
+    .map((p) => (/^[A-Za-z_$][\w$]*$/.test(p) ? p : null))
+  return { name, ps: names, rets }
+}
+/* top-level  a ? b : c  ->  [a, b, c] */
+function gTern(e) {
+  let d = 0,
+    q = null,
+    qi = -1,
+    nest = 0
+  for (let i = 0; i < e.length; i++) {
+    const c = e[i]
+    if (q) {
+      if (c === "\\") i++
+      else if (c === q) q = null
+      continue
+    }
+    if (c === '"' || c === "'" || c === "`") q = c
+    else if ("([{".includes(c)) d++
+    else if (")]}".includes(c)) d--
+    else if (
+      d === 0 &&
+      c === "?" &&
+      e[i + 1] !== "?" &&
+      e[i + 1] !== "." &&
+      e[i - 1] !== "?"
+    ) {
+      if (qi < 0) qi = i
+      else nest++
+    } else if (d === 0 && c === ":" && qi >= 0) {
+      if (nest === 0)
+        return [e.slice(0, qi), e.slice(qi + 1, i), e.slice(i + 1)]
+      nest--
+    }
+  }
+  return null
+}
+const gEval = (ps, args, ex, k) => {
+  if (ps.includes(null)) throw 0
+  return new Function(...ps, "__k", "return (" + ex + ")")(...args, k || [])
+}
+/* walk an expression: every  name(...)  call goes to onCall, every parameter to onParam */
+function gSub(e, ps, name, onCall, onParam) {
+  let out = "",
+    i = 0,
+    k = 0
+  while (i < e.length) {
+    const c = e[i]
+    if (c === '"' || c === "'" || c === "`") {
+      let j = i + 1
+      while (j < e.length && e[j] !== c) {
+        if (e[j] === "\\") j++
+        j++
+      }
+      out += e.slice(i, j + 1)
+      i = j + 1
+    } else if (/[0-9]/.test(c)) {
+      let j = i
+      while (j < e.length && /[\w.]/.test(e[j])) j++
+      out += e.slice(i, j)
+      i = j
+    } else if (/[A-Za-z_$]/.test(c)) {
+      let j = i
+      while (j < e.length && /[\w$]/.test(e[j])) j++
+      const id = e.slice(i, j),
+        prev = e.slice(0, i).trimEnd().slice(-1),
+        nxt = e.slice(j).trimStart()[0]
+      if (id === name && nxt === "(" && prev !== ".") {
+        const cl = gClose(e, e.indexOf("(", j))
+        out += onCall(k++, e.slice(i, cl + 1))
+        i = cl + 1
+      } else {
+        const pi = ps.indexOf(id)
+        out += pi >= 0 && prev !== "." ? onParam(pi, id) : id
+        i = j
+      }
+    } else {
+      out += c
+      i++
+    }
+  }
+  return { text: out, calls: k }
+}
+function gExpand(n, info) {
+  if (!n.ch.length) return ""
+  const kids = n.ch.map((c) => gN[c]),
+    cap = (t) => {
+      t = t.replace(/\s+/g, " ").trim()
+      return t.length > 64 ? t.slice(0, 63) + "…" : t
+    }
+  if (info) {
+    let first = null
+    for (const r of info.rets) {
+      let e = r
+      try {
+        for (let t = gTern(e); t; t = gTern(e))
+          e = gEval(info.ps, n.args, t[0]) ? t[1].trim() : t[2].trim()
+      } catch (x) {
+        e = r
+      }
+      const shown = gSub(
+        e,
+        info.ps,
+        info.name,
+        (k, raw) => (kids[k] ? lab(kids[k]) : raw),
+        (i) => fmt(n.args[i]),
+      )
+      if (shown.calls !== kids.length) continue
+      first = first || shown.text
+      try {
+        const calc = gSub(
+            e,
+            info.ps,
+            info.name,
+            (k) => "__k[" + k + "]",
+            (i, id) => id,
+          ),
+          v = gEval(
+            info.ps,
+            n.args,
+            calc.text,
+            kids.map((c) => c.ret),
+          )
+        if (JSON.stringify(v) === JSON.stringify(n.ret)) return cap(shown.text)
+      } catch (x) {}
+    }
+    if (first) return cap(first)
+  }
+  return cap("calls " + kids.map(lab).join(", "))
+}
+/* variable-width tidy layout: every card is as wide as its call + expansion */
+function gLay() {
+  let info = null
+  try {
+    info = gParse($("gCode").value, gName)
+  } catch (e) {}
+  gN.forEach((n) => {
+    n.call = lab(n)
+    n.rv = fmtR(n.ret)
+    n.ex = gExpand(n, info)
+    n.w = cardW(n.call, n.ex, n.rv)
   })
-  const own = (n) => n.w + 2 * (n.rw + 12)
+  const own = (n) => n.w + 14
   const S = (id) => {
     const n = gN[id]
     let k = 0
@@ -954,9 +1229,9 @@ function gLay() {
 function gMk(total) {
   const dmax = Math.max(...gN.map((n) => n.dep)),
     w = total + 24,
-    h = (dmax + 1) * GH + 34,
+    h = (dmax + 1) * GH + 44,
     X = (n) => n.cx + 12,
-    Y = (n) => n.dep * GH + 28
+    Y = (n) => n.dep * GH + 40
   let s = ""
   const svg = $("gTree")
   svg.setAttribute("width", w)
@@ -965,11 +1240,20 @@ function gMk(total) {
   gN.forEach((n) => {
     if (n.par >= 0) {
       const p = gN[n.par]
-      s += `<path class="ed" id="ge${n.id}" d="M${X(p)} ${Y(p) + 15} C${X(p)} ${(Y(p) + Y(n)) / 2},${X(n)} ${(Y(p) + Y(n)) / 2},${X(n)} ${Y(n) - 15}"/>`
+      s += `<path class="ed" id="ge${n.id}" d="M${X(p)} ${Y(p) + CH / 2} C${X(p)} ${(Y(p) + Y(n)) / 2},${X(n)} ${(Y(p) + Y(n)) / 2},${X(n)} ${Y(n) - CH / 2}"/>`
     }
   })
   gN.forEach((n) => {
-    s += `<g class="nd pen" id="gn${n.id}"><title>${esc(lab(n))}</title><rect x="${X(n) - n.w / 2}" y="${Y(n) - 15}" width="${n.w}" height="30" rx="10"/><text class="n" style="font-size:12px" x="${X(n)}" y="${Y(n) + 4.5}" text-anchor="middle">${esc(n.lb)}</text><text class="rv" id="gv${n.id}" x="${X(n) + n.w / 2 + 6}" y="${Y(n) + 4}" text-anchor="start"></text></g>`
+    s += cardSvg(
+      "gn" + n.id,
+      "gv" + n.id,
+      n.call + (n.ex ? " = " + n.ex : "") + " = " + n.rv,
+      X(n),
+      Y(n),
+      n.w,
+      n.call,
+      n.ex,
+    )
   })
   svg.innerHTML = s
 }
@@ -1167,8 +1451,7 @@ let bA = [],
   bSpeed = 1
 const bl = (n) => `bs(${n.lo}, ${n.hi})`,
   bTop = (e) => (e.stack.length ? bN[e.stack[e.stack.length - 1]] : null),
-  BW = 92,
-  BLH = 70,
+  BLH = 92,
   BSH = 86
 function bBuild() {
   bN = []
@@ -1237,6 +1520,18 @@ function bMk() {
         `<div class="bcw"><div class="bp" id="bp${i}"></div><div class="bc" id="bc${i}">${v}</div><div class="bx">${i}</div></div>`,
     )
     .join("")
+  bN.forEach((n) => {
+    n.call = bl(n)
+    n.ex =
+      n.mid < 0
+        ? "empty range"
+        : n.act === "found"
+          ? `a[${n.mid}]=${bA[n.mid]} found`
+          : n.act === "right"
+            ? `a[${n.mid}]=${bA[n.mid]} < ${bT} → bs(${n.mid + 1}, ${n.hi})`
+            : `a[${n.mid}]=${bA[n.mid]} > ${bT} → bs(${n.lo}, ${n.mid - 1})`
+    n.w = cardW(n.call, n.ex, String(n.res))
+  })
   const raw = []
   bN.forEach(
     (n) =>
@@ -1244,23 +1539,32 @@ function bMk() {
         n.par < 0 ? 0 : raw[n.par] + (bN[n.par].act === "left" ? -BSH : BSH)),
   )
   const mn = Math.min(...raw),
-    pad = BW / 2 + 14,
+    pad = Math.max(...bN.map((n) => n.w)) / 2 + 14,
     w = Math.max(...raw) - mn + pad * 2 + 50,
-    h = (Math.max(...bN.map((n) => n.dep)) + 1) * BLH + 30
+    h = (Math.max(...bN.map((n) => n.dep)) + 1) * BLH + 40
   bN.forEach((n) => {
     n.cx = raw[n.id] - mn + pad
-    n.cy = n.dep * BLH + 30
+    n.cy = n.dep * BLH + 40
   })
   let s = ""
   bN.forEach((n) => {
     if (n.par >= 0) {
       const p = bN[n.par],
         m = (p.cy + n.cy) / 2
-      s += `<path class="ed" id="be${n.id}" d="M${p.cx} ${p.cy + 19} C${p.cx} ${m},${n.cx} ${m},${n.cx} ${n.cy - 19}"/>`
+      s += `<path class="ed" id="be${n.id}" d="M${p.cx} ${p.cy + CH / 2} C${p.cx} ${m},${n.cx} ${m},${n.cx} ${n.cy - CH / 2}"/>`
     }
   })
   bN.forEach((n) => {
-    s += `<g class="nd pen" id="bn${n.id}"><rect x="${n.cx - BW / 2}" y="${n.cy - 19}" width="${BW}" height="38" rx="10"/><text class="n" style="font-size:13px" x="${n.cx}" y="${n.cy - 2}" text-anchor="middle">${bl(n)}</text><text class="l" x="${n.cx}" y="${n.cy + 12}" text-anchor="middle">${n.mid < 0 ? "empty" : "mid=" + n.mid}</text><text class="rv" id="bv${n.id}" x="${n.cx + BW / 2 + 6}" y="${n.cy + 4}" text-anchor="start"></text></g>`
+    s += cardSvg(
+      "bn" + n.id,
+      "bv" + n.id,
+      n.call + " = " + n.ex + " = " + n.res,
+      n.cx,
+      n.cy,
+      n.w,
+      n.call,
+      n.ex,
+    )
   })
   const svg = $("bTree")
   svg.setAttribute("width", w)
@@ -1510,7 +1814,9 @@ for (let i = 1; i <= 14; i++) {
   HSt[i] = hap(HCH[0], HSt[i - 1])
   HEn[i] = hap(HCH[3], HEn[i - 1])
 }
-let hN = [],
+let HCW = 30,
+  HOFF = 0,
+  hN = [],
   hE = [],
   hCC = [],
   hVis = [],
@@ -1527,8 +1833,7 @@ let hN = [],
   hCell = 1
 const HS = 1000,
   HP = 20,
-  HCW = 30,
-  HLH = 56,
+  HLH = 92,
   hcv = $("hlCv"),
   hctx = hcv.getContext("2d"),
   hacc = document.createElement("canvas")
@@ -1544,7 +1849,7 @@ function hBuild(h) {
   hh = h
   hD = Math.min(h, 7)
   hCo = h - hD
-  hTD = Math.min(hD, 4)
+  hTD = Math.min(hD, 3) /* cards are wide now: keep the tree to 85 cards */
   hN = []
   hE = []
   hCC = []
@@ -1775,21 +2080,55 @@ function hMkTree() {
       nd.x = (hN[nd.ch[0]].x + hN[nd.ch[nd.ch.length - 1]].x) / 2
   }
   hVis = hN.filter((n) => n.dep <= hTD)
-  const X = (n) => n.x * HCW + HCW / 2,
-    Y = (n) => n.dep * HLH + 28,
-    w = lc * HCW,
-    h = hTD * HLH + 56,
+  hVis.forEach((n) => {
+    const pts = Math.pow(4, n.n)
+    n.call = `hilbert(${n.n})`
+    /* the bottom row folds deeper calls into itself, so it shows only the call */
+    n.ex = n.n > 0 && n.dep < hTD ? `4 × hilbert(${n.n - 1}) + 3 links` : ""
+    n.val = `= ${hfmt(pts)} point${pts > 1 ? "s" : ""}`
+    n.w = cardW(n.call, n.ex, n.val)
+  })
+  HCW = 30
+  hVis.forEach((n) => {
+    if (n.dep === hTD) HCW = Math.max(HCW, n.w + 10)
+  })
+  hVis.forEach((n) => {
+    /* siblings of a parent are 4 columns apart */
+    if (n.dep < hTD) HCW = Math.max(HCW, Math.ceil((n.w + 10) / 4))
+  })
+  const x0 = (n) => n.x * HCW + HCW / 2
+  HOFF = Math.max(0, 10 - Math.min(...hVis.map((n) => x0(n) - n.w / 2)))
+  const X = (n) => x0(n) + HOFF,
+    Y = (n) => n.dep * HLH + 40,
+    w = Math.max(
+      lc * HCW + HOFF,
+      Math.max(...hVis.map((n) => x0(n) + n.w / 2)) + HOFF + 10,
+    ),
+    h = hTD * HLH + 80,
     svg = $("hlTree")
   let s = ""
   hVis.forEach((n) => {
     if (n.par >= 0) {
       const p = hN[n.par],
         m = (Y(p) + Y(n)) / 2
-      s += `<path class="ed" id="he${n.id}" d="M${X(p)} ${Y(p) + 16} C${X(p)} ${m},${X(n)} ${m},${X(n)} ${Y(n) - 16}"/>`
+      s += `<path class="ed" id="he${n.id}" d="M${X(p)} ${Y(p) + CH / 2} C${X(p)} ${m},${X(n)} ${m},${X(n)} ${Y(n) - CH / 2}"/>`
     }
   })
   hVis.forEach((n) => {
-    s += `<g class="nd pen" id="hn${n.id}"><title>hilbert(${n.n})${n.q >= 0 ? " - child " + (n.q + 1) + ", " + HQ[n.q].n : ""}</title><rect x="${X(n) - 12}" y="${Y(n) - 16}" width="24" height="32" rx="8"/><text class="n" style="font-size:13px" x="${X(n)}" y="${Y(n) - 1}" text-anchor="middle">${n.n}</text><text class="l" x="${X(n)}" y="${Y(n) + 11}" text-anchor="middle">${n.q >= 0 ? "#" + (n.q + 1) : "root"}</text></g>`
+    s += cardSvg(
+      "hn" + n.id,
+      "hv" + n.id,
+      n.call +
+        (n.q >= 0 ? " - child " + (n.q + 1) + ", " + HQ[n.q].n : "") +
+        (n.ex ? " = " + n.ex : "") +
+        " " +
+        n.val,
+      X(n),
+      Y(n),
+      n.w,
+      n.call,
+      n.ex,
+    )
   })
   svg.setAttribute("width", w)
   svg.setAttribute("height", h)
@@ -1806,6 +2145,7 @@ function hTreeShow() {
     if (nd.cls === c) return
     nd.cls = c
     $("hn" + nd.id).setAttribute("class", "nd " + c)
+    $("hv" + nd.id).textContent = c === "done" ? nd.val : ""
     const ed = $("he" + nd.id)
     if (ed)
       ed.setAttribute(
@@ -1817,7 +2157,7 @@ function hTreeShow() {
     const b = $("hlTB"),
       n = hN[t]
     b.scrollTo({
-      left: n.x * HCW + HCW / 2 - b.clientWidth / 2,
+      left: n.x * HCW + HCW / 2 + HOFF - b.clientWidth / 2,
       top: n.dep * HLH - b.clientHeight / 2 + 40,
     })
   }
@@ -2152,3 +2492,36 @@ if (document.fonts && document.fonts.ready)
   document.fonts.ready.then(() =>
     document.querySelectorAll(".bar").forEach(eqBar),
   )
+
+  /* ===== full-screen call tree: button in the top corner of every tree card ===== */
+;(function () {
+  const cards = ["treebox", "bTB", "gTB", "hlTB"]
+    .map((id) => $(id).closest(".card"))
+    .filter(Boolean)
+  let open = null
+  const set = (card, on) => {
+    card.classList.toggle("fs", on)
+    document.documentElement.classList.toggle("has-fs", on)
+    open = on ? card : null
+    const b = card.querySelector(".fs-btn")
+    b.innerHTML = ic(on ? "shrink" : "expand")
+    b.title = on ? "Exit full screen (Esc)" : "Full screen"
+    b.setAttribute("aria-label", b.title)
+    b.blur()
+    const box = card.querySelector("#treebox,.tb")
+    if (box) box.scrollTo({ left: box.scrollLeft, top: box.scrollTop })
+  }
+  cards.forEach((card) => {
+    const b = document.createElement("button")
+    b.type = "button"
+    b.className = "fs-btn keep"
+    b.innerHTML = ic("expand")
+    b.title = "Full screen"
+    b.setAttribute("aria-label", "Full screen")
+    b.onclick = () => set(card, !card.classList.contains("fs"))
+    card.appendChild(b)
+  })
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && open) set(open, false)
+  })
+})()

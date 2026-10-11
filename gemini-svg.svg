@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- التدرج اللونية للخلفية الداكنة -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- التدرج اللوني الرئيسي للعودية (أخضر تكنولوجي مميز) -->
+    <linearGradient id="recGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <!-- توهج خفيف للأيقونة -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- خلفية دائرية متناسقة للـ Favicon -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+
+  <!-- مجموعة الأشكال المتداخلة التي تعبر عن العودية (Self-Similarity & Infinite Loop) -->
+  <g transform="translate(256, 256)" filter="url(#glow)">
+    <!-- المستوى الأول (الخارجي) -->
+    <g transform="rotate(0)">
+      <rect x="-160" y="-160" width="320" height="320" rx="48" 
+            fill="none" stroke="url(#recGrad)" stroke-width="24" stroke-dasharray="800 200" stroke-linecap="round" />
+    </g>
+
+    <!-- المستوى الثاني (المتدخل والمستدير) -->
+    <g transform="rotate(22.5) scale(0.68)">
+      <rect x="-160" y="-160" width="320" height="320" rx="48" 
+            fill="none" stroke="url(#recGrad)" stroke-width="32" stroke-opacity="0.85" stroke-dasharray="800 200" stroke-linecap="round" />
+    </g>
+
+    <!-- المستوى الثالث (الأصغر) -->
+    <g transform="rotate(45) scale(0.45)">
+      <rect x="-160" y="-160" width="320" height="320" rx="48" 
+            fill="none" stroke="url(#recGrad)" stroke-width="44" stroke-opacity="0.7" stroke-dasharray="800 200" stroke-linecap="round" />
+    </g>
+
+    <!-- النواة المركزية (تُعبر عن الحالة الأساسية / Base Case) -->
+    <circle cx="0" cy="0" r="28" fill="url(#recGrad)" />
+  </g>
+</svg>

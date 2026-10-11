@@ -744,6 +744,17 @@ textarea {
   font-weight: 700;
   font-size: 11px;
 }
+.nd text.n.ex {
+  font-weight: 500;
+  opacity: 0.9;
+}
+.nd.done text.rv,
+.nd.rel text.rv {
+  fill: #fff;
+}
+.nd.act text.rv {
+  fill: #1a1a1a;
+}
 .nd.rel rect {
   fill: var(--rel);
   stroke: var(--rel);
@@ -1710,4 +1721,55 @@ html[data-boot="gen"] #pg-gen {
 
 aside {
   scrollbar-color: var(--scroll-thumb) transparent !important;
+}
+
+/* ===== full-screen call tree ===== */
+.card:has(.fs-btn) {
+  position: relative;
+}
+.card:has(.fs-btn) > h2 {
+  padding-right: 44px;
+}
+.fs-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+  color: var(--mut);
+  background: transparent;
+  border-color: transparent;
+}
+.fs-btn:hover:not(:disabled) {
+  color: var(--txt);
+  background: var(--field);
+  border-color: var(--bd);
+}
+.card.fs {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  border-radius: 0 !important;
+  padding: 16px 18px;
+  background: rgb(var(--panel-rgb));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.card.fs > h2 {
+  padding-right: 52px;
+}
+.card.fs .fs-btn {
+  top: 12px;
+  right: 14px;
+}
+.card.fs :is(#treebox, .tb) {
+  flex: 1 !important;
+  max-height: none !important;
+  min-height: 0;
+}
+html.has-fs,
+html.has-fs body {
+  overflow: hidden;
 }

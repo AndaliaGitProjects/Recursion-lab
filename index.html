@@ -8,6 +8,7 @@
     />
     <title>Recursion Lab</title>
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="icon" href="gemini-svg.svg" type="image/svg+xml" />
     <script>
       /* Apply saved theme / corner / accent / glass / page BEFORE first paint
          (prevents the light/dark/accent flash on refresh). */
@@ -151,6 +152,12 @@
           <path
             d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"
           />
+        </symbol>
+        <symbol id="i-expand" viewBox="0 0 24 24">
+          <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" />
+        </symbol>
+        <symbol id="i-shrink" viewBox="0 0 24 24">
+          <path d="M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5" />
         </symbol>
         <symbol id="i-chev" viewBox="0 0 24 24">
           <path d="M6 9l6 6 6-6" />
@@ -475,7 +482,7 @@
             <div class="bgt">Animation setting</div>
             <div class="bgr">
               <button title="Reset (R)" id="gRun" class="p">
-                <svg class="ic"><use href="#i-refresh" /></svg> Run</button
+                <svg class="ic"><use href="#i-refresh" /></svg> Reset</button
               ><button id="gSave">
                 <svg class="ic"><use href="#i-save" /></svg> Save as new</button
               ><button title="Back one step (Left arrow)" id="gBk">
@@ -521,8 +528,8 @@
           </div>
           <div class="card full">
             <h2>
-              Call tree – each node shows its full arguments, return values
-              appear beside it
+              Call tree – each node shows the call with its arguments = what it
+              expands to; the value appears inside it when the call returns
             </h2>
             <div id="gInfo"></div>
             <div id="gTB" class="tb"><svg id="gTree"></svg></div>
