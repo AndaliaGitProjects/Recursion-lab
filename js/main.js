@@ -2810,3 +2810,134 @@ document
   mq.addEventListener("change", apply)
   apply()
 })()
+
+/* ===== star prompt: "hard" = star the repo to enter, "soft" = dismissible reminder ===== */
+;(function () {
+  const C = window.RL_STAR || {},
+    mode = C.mode,
+    hard = mode === "hard"
+  if (!C.repo || (mode !== "hard" && mode !== "soft")) return
+  const KEY = "rl_star",
+    LATER = 7 * 864e5,
+    root = document.documentElement,
+    modal = $("starModal"),
+    user = $("starUser"),
+    err = $("starErr"),
+    go = $("starGo")
+  const read = () => {
+    try {
+      return JSON.parse(localStorage.getItem(KEY) || "{}")
+    } catch (e) {
+      return {}
+    }
+  }
+  const write = (o) => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(o))
+    } catch (e) {}
+  }
+  const st = read()
+  if (
+    hard
+      ? st.s === "verified"
+      : st.s === "done" || (st.s === "later" && Date.now() - st.t < LATER)
+  )
+    return
+
+  $("starMsg").textContent = hard
+    ? "Recursion Lab is free. To enter, please star the project on GitHub first, then type your GitHub username so we can check."
+    : "If Recursion Lab helped you, a star on GitHub helps other people find it. It takes two seconds."
+  $("starVerify").hidden = !hard
+  $("starLater").hidden = hard
+  $("starClose").hidden = hard
+  $("starLink").href = "https://github.com/" + C.repo
+
+  const open = () => {
+    modal.classList.add("open")
+    modal.setAttribute("aria-hidden", "false")
+    ;(hard ? user : $("starLink")).focus({ preventScroll: true })
+  }
+  const close = () => {
+    modal.classList.remove("open")
+    modal.setAttribute("aria-hidden", "true")
+  }
+  const later = () => {
+    write({ s: "later", t: Date.now() })
+    close()
+  }
+
+  if (!hard) {
+    /* soft: a click on the star link counts as done (we can't check it) */
+    $("starLink").addEventListener("click", () => {
+      write({ s: "done", t: Date.now() })
+      close()
+    })
+    $("starLater").onclick = $("starClose").onclick = later
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) later()
+    })
+    addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.classList.contains("open")) later()
+    })
+    setTimeout(open, 2500)
+    return
+  }
+
+  /* hard: look for the visitor in the repo's public stargazers list */
+  async function hasStarred(login) {
+    const want = login.toLowerCase()
+    for (let page = 1; page <= 30; page++) {
+      const r = await fetch(
+        "https://api.github.com/repos/" +
+          C.repo +
+          "/stargazers?per_page=100&page=" +
+          page,
+        {
+          headers: { Accept: "application/vnd.github+json" },
+          cache: "no-cache",
+        },
+      )
+      if (r.status === 403 || r.status === 429) throw new Error("rate")
+      if (!r.ok) throw new Error("net")
+      const list = await r.json()
+      if (list.some((u) => u.login.toLowerCase() === want)) return true
+      if (list.length < 100) return false
+    }
+    return false
+  }
+  $("starForm").onsubmit = async (e) => {
+    e.preventDefault()
+    const u = user.value.trim().replace(/^@/, "")
+    if (!/^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i.test(u)) {
+      err.textContent = "Enter a valid GitHub username."
+      return
+    }
+    err.textContent = ""
+    go.disabled = user.disabled = true
+    go.textContent = "Checking…"
+    let ok = false
+    try {
+      ok = await hasStarred(u)
+    } catch (x) {
+      err.textContent =
+        x.message === "rate"
+          ? "GitHub is limiting requests right now. Please try again in a minute."
+          : "Couldn't reach GitHub. Check your connection and try again."
+      ok = null
+    }
+    go.disabled = user.disabled = false
+    go.textContent = "I starred it – enter"
+    if (ok === null) return
+    if (!ok) {
+      err.textContent =
+        "We couldn't find a star from \"" +
+        u +
+        '" yet. Star the repo, wait a few seconds, then try again.'
+      return
+    }
+    write({ s: "verified", u, t: Date.now() })
+    root.classList.remove("star-lock")
+    close()
+  }
+  open()
+})()

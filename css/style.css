@@ -2174,3 +2174,66 @@ html.has-fs body {
 .bgrp > .scnt:empty {
   display: none;
 }
+
+/* ===== star prompt ===== */
+.star-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+.star-body p {
+  margin: 0;
+}
+#starModal [hidden] {
+  display: none !important;
+}
+.star-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 14px;
+  background: var(--rel);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--rel) 35%, transparent);
+}
+.star-link .ic {
+  fill: currentColor;
+}
+.star-link:hover {
+  filter: brightness(1.08);
+}
+#starVerify {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+#starVerify .name-err {
+  margin-top: 0;
+}
+.star-later {
+  background: transparent;
+  border-color: transparent;
+  color: var(--mut);
+}
+/* "must star to enter": everything except the dialog stays hidden until verified */
+html.star-lock body > :not(#starModal) {
+  visibility: hidden;
+}
+#starGo {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  padding: 11px 16px;
+  font-weight: 600;
+  border-radius: 14px;
+}
+#starGo:disabled {
+  opacity: 0.7;
+}
