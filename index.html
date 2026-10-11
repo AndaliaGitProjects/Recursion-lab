@@ -8,7 +8,7 @@
     />
     <title>Recursion Lab</title>
     <link rel="stylesheet" href="css/style.css" />
-    <link rel="icon" href="gemini-svg.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/x-icon" href="gemini-svg.svg" />
     <script>
       /* Apply saved theme / corner / accent / glass / page BEFORE first paint
          (prevents the light/dark/accent flash on refresh). */
@@ -61,6 +61,9 @@
         <symbol id="i-fact" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="9" />
           <path d="M12 7v6.2M12 16.6v.1" />
+        </symbol>
+        <symbol id="i-ack" viewBox="0 0 24 24">
+          <path d="M4.5 20 12 4l7.5 16M7.8 14.2h8.4" />
         </symbol>
         <symbol id="i-fib" viewBox="0 0 24 24">
           <path
@@ -159,8 +162,23 @@
         <symbol id="i-shrink" viewBox="0 0 24 24">
           <path d="M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5" />
         </symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24">
+          <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+        </symbol>
+        <symbol id="i-fold" viewBox="0 0 24 24">
+          <path d="M7 4l5 5 5-5M7 20l5-5 5 5" />
+        </symbol>
+        <symbol id="i-unfold" viewBox="0 0 24 24">
+          <path d="M7 9l5-5 5 5M7 15l5 5 5-5" />
+        </symbol>
         <symbol id="i-chev" viewBox="0 0 24 24">
           <path d="M6 9l6 6 6-6" />
+        </symbol>
+        <symbol id="i-sliders" viewBox="0 0 24 24">
+          <path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0" />
+          <circle cx="15" cy="6" r="2.2" />
+          <circle cx="9" cy="12" r="2.2" />
+          <circle cx="17" cy="18" r="2.2" />
         </symbol>
       </defs>
     </svg>
@@ -176,24 +194,65 @@
     <div id="side-overlay"></div>
 
     <aside id="side">
-      <div class="brand">Recursion Lab</div>
-      <div class="sec">Add algorithm</div>
-      <a data-p="new"
-        ><svg class="ic ic-lg"><use href="#i-fn" /></svg
-        ><span>New algorithm</span></a
-      >
-      <div id="mineBar" class="mbar">
-        <button id="mHide" title="Hide saved functions">Hide all</button
-        ><button id="mShow" title="Show saved functions">Show all</button
-        ><button id="mDel" title="Delete all saved functions">
-          Delete all
+      <div class="side-top">
+        <div class="brand">Recursion Lab</div>
+        <button
+          id="colAll"
+          class="sbtn"
+          type="button"
+          title="Collapse all"
+          aria-label="Collapse all"
+        >
+          <svg class="ic"><use href="#i-fold" /></svg>
         </button>
       </div>
-      <div id="mine"></div>
-      <div class="sec">Ready-made algorithms</div>
-      <div id="ready"></div>
-      <div class="sec">Recursion curves</div>
-      <div id="curves"></div>
+      <div class="sec" data-sec="mine">
+        <button class="st" type="button" data-tog="mine" aria-expanded="true">
+          <svg class="ic chev"><use href="#i-chev" /></svg
+          ><span>My algorithms</span>
+        </button>
+        <span class="sacts">
+          <button
+            id="addNew"
+            class="sbtn sact"
+            type="button"
+            title="Add new algorithm"
+            aria-label="Add new algorithm"
+          >
+            <svg class="ic"><use href="#i-plus" /></svg>
+          </button>
+          <button
+            id="mDel"
+            class="sbtn sact"
+            type="button"
+            title="Delete all saved algorithms"
+            aria-label="Delete all saved algorithms"
+          >
+            <svg class="ic"><use href="#i-trash" /></svg>
+          </button>
+        </span>
+      </div>
+      <div class="sbody" data-sec="mine">
+        <div class="sin"><div id="mine"></div></div>
+      </div>
+      <div class="sec" data-sec="ready">
+        <button class="st" type="button" data-tog="ready" aria-expanded="true">
+          <svg class="ic chev"><use href="#i-chev" /></svg
+          ><span>Ready-made algorithms</span>
+        </button>
+      </div>
+      <div class="sbody" data-sec="ready">
+        <div class="sin"><div id="ready"></div></div>
+      </div>
+      <div class="sec" data-sec="curves">
+        <button class="st" type="button" data-tog="curves" aria-expanded="true">
+          <svg class="ic chev"><use href="#i-chev" /></svg
+          ><span>Recursion curves</span>
+        </button>
+      </div>
+      <div class="sbody" data-sec="curves">
+        <div class="sin"><div id="curves"></div></div>
+      </div>
       <div class="setg">
         <div class="keys">
           <b>Keyboard</b><br /><kbd>Space</kbd> play / pause<br /><kbd
@@ -291,6 +350,34 @@
         </div>
       </div>
     </aside>
+    <div id="nameModal" class="dev-modal" aria-hidden="true">
+      <form
+        id="nameForm"
+        class="dev-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nameTitle"
+        autocomplete="off"
+      >
+        <div class="dev-head">
+          <svg class="ic ic-lg"><use href="#i-save" /></svg>
+          <h2 id="nameTitle">Name your algorithm</h2>
+        </div>
+        <input
+          id="nameInput"
+          class="name-in"
+          type="text"
+          maxlength="40"
+          spellcheck="false"
+          placeholder="e.g. Factorial"
+        />
+        <div id="nameErr" class="name-err"></div>
+        <div class="name-acts">
+          <button id="nameCancel" type="button">Cancel</button>
+          <button type="submit" class="p">Save</button>
+        </div>
+      </form>
+    </div>
     <div id="devModal" class="dev-modal" aria-hidden="true">
       <div
         class="dev-dialog"
@@ -348,6 +435,15 @@
                   value="1"
               /></label>
             </div>
+            <button
+              type="button"
+              class="vtog"
+              title="Variables"
+              aria-label="Variables"
+              aria-expanded="false"
+            >
+              <svg class="ic"><use href="#i-sliders" /></svg>
+            </button>
           </div>
           <div class="bgrp">
             <div class="bgt">Variables</div>
@@ -422,6 +518,15 @@
                   value="1"
               /></label>
             </div>
+            <button
+              type="button"
+              class="vtog"
+              title="Variables"
+              aria-label="Variables"
+              aria-expanded="false"
+            >
+              <svg class="ic"><use href="#i-sliders" /></svg>
+            </button>
           </div>
           <div class="bgrp">
             <div class="bgt">Variables</div>
@@ -433,10 +538,10 @@
                   style="width: 210px; max-width: 100%"
                   spellcheck="false" /></label
               ><label>Target <input id="bTgt" type="number" /></label>
+              <span id="bErr" style="color: var(--D)"></span>
             </div>
           </div>
-          <span id="bCnt" style="color: var(--mut)"></span
-          ><span id="bErr" style="color: var(--D)"></span>
+          <span id="bCnt" style="color: var(--mut)"></span>
         </div>
         <div class="grid">
           <div class="card">
@@ -502,6 +607,15 @@
                   value="1"
               /></label>
             </div>
+            <button
+              type="button"
+              class="vtog"
+              title="Variables"
+              aria-label="Variables"
+              aria-expanded="false"
+            >
+              <svg class="ic"><use href="#i-sliders" /></svg>
+            </button>
           </div>
           <div class="bgrp">
             <div class="bgt">Variables</div>
@@ -594,6 +708,15 @@
                   value="0"
               /></label>
             </div>
+            <button
+              type="button"
+              class="vtog"
+              title="Variables"
+              aria-label="Variables"
+              aria-expanded="false"
+            >
+              <svg class="ic"><use href="#i-sliders" /></svg>
+            </button>
           </div>
           <div class="bgrp">
             <div class="bgt">Variables</div>

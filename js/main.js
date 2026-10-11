@@ -14,6 +14,7 @@ let ST = {
   names: {},
   ord: { ready: null },
   hideMine: false,
+  col: {},
   corner: "squircle",
   accent: "blue",
   setOpen: false,
@@ -266,20 +267,32 @@ const cvx = document.createElement("canvas").getContext("2d"),
       /[&<>]/g,
       (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
     ),
-  cardW = (call, ex, val) =>
+  cardW = (call, ex, val, logs = []) =>
     Math.max(
       56,
       tw(call + (ex ? " =" : ""), CF1) + 24,
       ex ? tw(ex, CF1) + 24 : 0,
       tw("= " + val, CF2) + 24,
+      ...logs.map((t) => tw(t, CF1) + 24),
     ),
-  cardSvg = (id, vid, tip, cx, cy, w, call, ex) =>
-    `<g class="nd pen" id="${id}"><title>${cEsc(tip)}</title><rect x="${cx - w / 2}" y="${cy - CH / 2}" width="${w}" height="${CH}" rx="10"/>` +
-    `<text class="n" x="${cx}" y="${ex ? cy - 13 : cy - 6}" text-anchor="middle" style="font-size:12px">${cEsc(call)}${ex ? " =" : ""}</text>` +
-    (ex
-      ? `<text class="n ex" x="${cx}" y="${cy + 3}" text-anchor="middle" style="font-size:12px">${cEsc(ex)}</text>`
-      : "") +
-    `<text class="rv" id="${vid}" x="${cx}" y="${ex ? cy + 19 : cy + 10}" text-anchor="middle"></text></g>`
+  cardH = (ex, nl = 0) => Math.max(CH, 16 * (2 + (ex ? 1 : 0) + nl) + 10),
+  /* lines: call =, expansion, console.log lines (filled in as they happen), value */
+  cardSvg = (id, vid, tip, cx, cy, w, call, ex, nl = 0, h = CH) => {
+    const n = 2 + (ex ? 1 : 0) + nl,
+      y = (k) => cy + 3 - 8 * (n - 1) + 16 * k
+    let k = 0,
+      t =
+        `<g class="nd pen" id="${id}"><title>${cEsc(tip)}</title><rect x="${cx - w / 2}" y="${cy - h / 2}" width="${w}" height="${h}" rx="10"/>` +
+        `<text class="n" x="${cx}" y="${y(k++)}" text-anchor="middle" style="font-size:12px">${cEsc(call)}${ex ? " =" : ""}</text>`
+    if (ex)
+      t += `<text class="n ex" x="${cx}" y="${y(k++)}" text-anchor="middle" style="font-size:12px">${cEsc(ex)}</text>`
+    for (let l = 0; l < nl; l++)
+      t += `<text class="n ex lgl" id="${id}_l${l}" x="${cx}" y="${y(k++)}" text-anchor="middle" style="font-size:12px"></text>`
+    return (
+      t +
+      `<text class="rv" id="${vid}" x="${cx}" y="${y(k)}" text-anchor="middle"></text></g>`
+    )
+  }
 /* ---------- tree ---------- */
 let CW = 56,
   TOFF = 0
@@ -554,6 +567,12 @@ const PRE = {
     code: "function fib(n) {\n  if (n < 2) return n;                 // base cases\n  return fib(n - 1) + fib(n - 2);      // two recursive calls\n}",
     call: "fib(5)",
   },
+  ack: {
+    t: "Ackermann",
+    d: "A(m, n): if m = 0 return n + 1; if n = 0 return A(m−1, 1); otherwise return A(m−1, A(m, n−1)). The inner call A(m, n−1) runs first, and its result becomes the second argument of the outer call, so the tree grows explosively (not primitive recursive). Try ack(1, 3), ack(2, 3) or ack(3, 1); bigger values pass the 300-call limit. Edit the call and press Enter, or press Reset to restart.",
+    code: "function ack(m, n) {\n  if (m === 0) return n + 1;            // base case\n  if (n === 0) return ack(m - 1, 1);    // n = 0: step down m\n  return ack(m - 1, ack(m, n - 1));     // nested recursive call\n}",
+    call: "ack(2, 2)",
+  },
   new: {
     t: "New algorithm",
     d: "Write any JavaScript code (helpers, memo tables and other functions are fine). The function named in your Call expression, e.g. power(2, 5), is the one that gets traced. Limit: 300 calls. Every successful run is saved in the sidebar.",
@@ -608,6 +627,7 @@ const RD = [
   { p: "hanoi", i: "hanoi", n: "Tower of Hanoi" },
   { p: "fact", i: "fact", n: "Factorial" },
   { p: "fib", i: "fib", n: "Fibonacci" },
+  { p: "ack", i: "ack", n: "Ackermann" },
   { p: "bsearch", i: "search", n: "Binary Search" },
 ]
 const CV = [{ p: "hilbert", i: "curve", n: "Hilbert Curve" }]
@@ -638,39 +658,70 @@ function side() {
     .join("")
   $("curves").innerHTML = CV.map((r) => sItem(r.p, r.i)).join("")
   $("tHil").textContent = nameOf("hilbert")
-  $("mine").style.display = ST.hideMine ? "none" : ""
-  $("mineBar").style.display = mine.length ? "" : "none"
-  $("mHide").style.display = ST.hideMine ? "none" : ""
-  $("mShow").style.display = ST.hideMine ? "" : "none"
-  $("mShow").textContent = "Show all (" + mine.length + ")"
+  if (!mine.length)
+    $("mine").innerHTML =
+      '<div class="empty">No saved algorithms yet. Press + to add one.</div>'
+  $("mDel").style.display = mine.length ? "" : "none"
+  applyCol()
   $("tH").textContent = nameOf("hanoi")
   $("tB").textContent = nameOf("bsearch")
   document
     .querySelectorAll("#side a")
     .forEach((a) => a.classList.toggle("on", a.dataset.p === curP))
 }
+const SECS = ["mine", "ready", "curves"]
+function applyCol() {
+  if (ST.hideMine && !(ST.col || {}).mine) ST.col = { ...ST.col, mine: true }
+  ST.hideMine = false
+  SECS.forEach((s) => {
+    const c = !!(ST.col || {})[s]
+    document
+      .querySelectorAll('[data-sec="' + s + '"]')
+      .forEach((el) => el.classList.toggle("shut", c))
+    const t = document.querySelector('[data-tog="' + s + '"]')
+    if (t) t.setAttribute("aria-expanded", String(!c))
+  })
+  const all = SECS.every((s) => ST.col[s])
+  const b = $("colAll")
+  b.innerHTML = ic(all ? "unfold" : "fold")
+  b.title = all ? "Expand all" : "Collapse all"
+  b.setAttribute("aria-label", b.title)
+  $("addNew").classList.toggle("on", curP === "new")
+}
 const sLocked = () => busy || loop || playing || gPlay || bPlay || hlPlay
 $("side").onclick = (e) => {
   if (sLocked()) return
   if (e.target.closest(".grip,input")) return
-  const bt = e.target.closest("#mHide,#mShow,#mDel")
-  if (bt) {
-    if (bt.id === "mDel") {
-      if (!mine.length || !confirm("Delete all saved functions?")) return
-      mine.forEach((m) => {
-        delete ST.dr["m" + m.id]
-        delete ST.names["m" + m.id]
-      })
-      mine = []
-      saveMine()
-      persist()
-      if (curP[0] === "m") showPage("new")
-      else side()
-    } else {
-      ST.hideMine = bt.id === "mHide"
-      persist()
-      side()
-    }
+  const tg = e.target.closest("[data-tog]")
+  if (tg) {
+    ST.col[tg.dataset.tog] = !ST.col[tg.dataset.tog]
+    persist()
+    applyCol()
+    return
+  }
+  if (e.target.closest("#colAll")) {
+    const all = SECS.every((s) => ST.col[s])
+    SECS.forEach((s) => (ST.col[s] = !all))
+    persist()
+    applyCol()
+    return
+  }
+  if (e.target.closest("#addNew")) {
+    showPage("new")
+    if (window.innerWidth <= 800) sideSet(false)
+    return
+  }
+  if (e.target.closest("#mDel")) {
+    if (!mine.length || !confirm("Delete all saved algorithms?")) return
+    mine.forEach((m) => {
+      delete ST.dr["m" + m.id]
+      delete ST.names["m" + m.id]
+    })
+    mine = []
+    saveMine()
+    persist()
+    if (curP[0] === "m") showPage("new")
+    else side()
     return
   }
   const x = e.target.closest(".x")
@@ -769,11 +820,9 @@ $("side").addEventListener("dblclick", (e) => {
         nameOf(p),
         p[0] === "m"
           ? "fn"
-          : p === "fact"
-            ? "fact"
-            : p === "fib"
-              ? "fib"
-              : "fn",
+          : p === "fact" || p === "fib" || p === "ack"
+            ? p
+            : "fn",
       )
   }
   inp.onkeydown = (k) => {
@@ -821,16 +870,20 @@ function showPage(p, first) {
     const pr = p[0] === "m" ? findM(+p.slice(1)) : PRE[p],
       d = p === "new" && !first ? null : ST.dr[p]
     const rdy = !!PRE[p] && p !== "new"
-    $("gRun").innerHTML = ic("refresh") + (rdy ? " Reset" : " Run")
+    $("gRun").innerHTML = ic("refresh") + " Reset"
     $("gCode").readOnly = rdy
     $("gSave").style.display = rdy ? "none" : ""
     setTitle(
       nameOf(p),
-      p[0] === "m" ? "fn" : p === "fact" ? "fact" : p === "fib" ? "fib" : "fn",
+      p[0] === "m"
+        ? "fn"
+        : p === "fact" || p === "fib" || p === "ack"
+          ? p
+          : "fn",
     )
     $("gDesc").textContent =
       pr.d ||
-      "Your saved algorithm. Edit the code or the call and press Run to update it."
+      "Your saved algorithm. Edit the code or the call and press Reset to update it."
     $("gCode").value = d && !rdy ? d.code : pr.code
     $("gCall").value = d ? d.call : pr.call
     gRun()
@@ -876,6 +929,7 @@ function gTrace(code, call) {
           ch: [],
           dep: st.length,
           ret: undefined,
+          logs: [],
           x: 0,
         }
       nodes.push(nd)
@@ -888,13 +942,35 @@ function gTrace(code, call) {
       evs.push({ t: "ret", id, stack: st.slice() })
       return r
     }
+  /* console.log / info / debug made inside a call belong to that call's node */
+  const logf = (...a) => {
+    const id = st.length ? st[st.length - 1] : -1
+    if (id >= 0 && nodes[id].logs.length < 50)
+      nodes[id].logs.push({
+        t: a
+          .map((x) => (typeof x === "string" ? x : fmt(x)))
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim(),
+        at: evs.length - 1,
+      })
+    try {
+      console.log(...a)
+    } catch (e) {}
+  }
+  const fake = {}
+  Object.keys(console).forEach((k) => {
+    if (typeof console[k] === "function") fake[k] = console[k].bind(console)
+  })
+  fake.log = fake.info = fake.debug = logf
   let fnc, res
   try {
     fnc = new Function(
       "__w",
+      "console",
       code + "\n" + name + " = __w(" + name + ");\nreturn " + name + ";",
-    )(wrap)
-    res = new Function(name, "return (" + call + ")")(fnc)
+    )(wrap, fake)
+    res = new Function(name, "console", "return (" + call + ")")(fnc, fake)
   } catch (e) {
     throw new Error(e.message)
   }
@@ -918,25 +994,28 @@ function gRun(save) {
   }
   if (save === true && (curP === "new" || curP[0] === "m")) {
     if (curP === "new") {
-      const id = nid()
-      mine.push({
-        id,
-        name: gName,
-        code: $("gCode").value,
-        call: $("gCall").value,
+      askName(gName, (nm) => {
+        const id = nid()
+        mine.push({
+          id,
+          name: nm,
+          code: $("gCode").value,
+          call: $("gCall").value,
+        })
+        setSaved(id)
+        saveMine()
+        side()
       })
-      setSaved(id)
     } else {
       const m = findM(+curP.slice(1))
       if (m) {
-        m.name = gName
         m.code = $("gCode").value
         m.call = $("gCall").value
         setTitle(nameOf(curP), "fn")
       }
+      saveMine()
+      side()
     }
-    saveMine()
-    side()
   }
   gMk(gLay())
   gJump(0)
@@ -944,21 +1023,61 @@ function gRun(save) {
 }
 function setSaved(id) {
   curP = "m" + id
-  setTitle(gName, "fn")
+  setTitle(nameOf(curP), "fn")
   $("gDesc").textContent =
-    "Your saved algorithm. Edit the code or the call and press Run to update it."
+    "Your saved algorithm. Edit the code or the call and press Reset to update it."
   ST.page = curP
   persist()
 }
 function gSaveNew() {
   if (!gRun(false)) return
-  const id = nid()
-  mine.push({ id, name: gName, code: $("gCode").value, call: $("gCall").value })
-  setSaved(id)
-  saveMine()
-  side()
+  askName(gName, (nm) => {
+    const id = nid()
+    mine.push({ id, name: nm, code: $("gCode").value, call: $("gCall").value })
+    setSaved(id)
+    saveMine()
+    side()
+  })
 }
+const nameModal = $("nameModal"),
+  nameInput = $("nameInput")
+let nameCb = null
+function askName(def, cb) {
+  nameCb = cb
+  nameInput.value = def || ""
+  $("nameErr").textContent = ""
+  nameModal.classList.add("open")
+  nameModal.setAttribute("aria-hidden", "false")
+  setTimeout(() => {
+    nameInput.focus()
+    nameInput.select()
+  }, 30)
+}
+function closeName() {
+  nameCb = null
+  nameModal.classList.remove("open")
+  nameModal.setAttribute("aria-hidden", "true")
+}
+$("nameForm").onsubmit = (e) => {
+  e.preventDefault()
+  const v = nameInput.value.trim()
+  if (!v) {
+    $("nameErr").textContent = "Please enter a name."
+    return
+  }
+  const cb = nameCb
+  closeName()
+  if (cb) cb(v)
+}
+$("nameCancel").onclick = closeName
+nameModal.addEventListener("click", (e) => {
+  if (e.target === nameModal) closeName()
+})
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && nameModal.classList.contains("open")) closeName()
+})
 const GH = 100
+let gRowY = []
 const fmtR = (v) => {
   const s = fmt(v)
   return s.length > 80 ? s.slice(0, 79) + "…" : s
@@ -1049,6 +1168,14 @@ function gParse(code, name) {
       if (e) rets.push(e)
     }
   }
+  if (body !== null) {
+    const re = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*/g
+    let r
+    while ((r = re.exec(body))) {
+      const e = gReadExpr(body, r.index + r[0].length)
+      if (e) rets.push(e)
+    }
+  }
   const names = ps
     .split(",")
     .map((p) => p.replace(/=[\s\S]*$/, "").trim())
@@ -1093,10 +1220,38 @@ const gEval = (ps, args, ex, k) => {
   return new Function(...ps, "__k", "return (" + ex + ")")(...args, k || [])
 }
 /* walk an expression: every  name(...)  call goes to onCall, every parameter to onParam */
-function gSub(e, ps, name, onCall, onParam) {
+/* split "a, f(b, c), d" at top-level commas */
+function gSplit(t) {
+  const out = []
+  let d = 0,
+    q = null,
+    from = 0
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i]
+    if (q) {
+      if (c === "\\") i++
+      else if (c === q) q = null
+    } else if (c === '"' || c === "'" || c === "`") q = c
+    else if ("([{".includes(c)) d++
+    else if (")]}".includes(c)) d--
+    else if (c === "," && d === 0) {
+      out.push(t.slice(from, i))
+      from = i + 1
+    }
+  }
+  out.push(t.slice(from))
+  return out
+}
+/* walk an expression: every  name(...)  call goes to onCall(k, raw, nestedParts),
+   every parameter to onParam. Calls are numbered in execution order, so a call
+   inside another call's arguments (ack(m-1, ack(m, n-1))) comes first. */
+function gSub(e, ps, name, onCall, onParam, st) {
+  st = st || { k: 0 }
+  const has = new RegExp(
+    "(^|[^.\\w$])" + name.replace(/\$/g, "\\$") + "\\s*\\(",
+  )
   let out = "",
-    i = 0,
-    k = 0
+    i = 0
   while (i < e.length) {
     const c = e[i]
     if (c === '"' || c === "'" || c === "`") {
@@ -1119,8 +1274,12 @@ function gSub(e, ps, name, onCall, onParam) {
         prev = e.slice(0, i).trimEnd().slice(-1),
         nxt = e.slice(j).trimStart()[0]
       if (id === name && nxt === "(" && prev !== ".") {
-        const cl = gClose(e, e.indexOf("(", j))
-        out += onCall(k++, e.slice(i, cl + 1))
+        const o = e.indexOf("(", j),
+          cl = gClose(e, o),
+          parts = gSplit(e.slice(o + 1, cl)).map((a) =>
+            has.test(a) ? gSub(a, ps, name, onCall, onParam, st).text : null,
+          )
+        out += onCall(st.k++, e.slice(i, cl + 1), parts)
         i = cl + 1
       } else {
         const pi = ps.indexOf(id)
@@ -1132,7 +1291,7 @@ function gSub(e, ps, name, onCall, onParam) {
       i++
     }
   }
-  return { text: out, calls: k }
+  return { text: out, calls: st.k }
 }
 function gExpand(n, info) {
   if (!n.ch.length) return ""
@@ -1151,14 +1310,41 @@ function gExpand(n, info) {
       } catch (x) {
         e = r
       }
+      let bad = false
       const shown = gSub(
         e,
         info.ps,
         info.name,
-        (k, raw) => (kids[k] ? lab(kids[k]) : raw),
+        (k, raw, parts) => {
+          const kid = kids[k]
+          /* the candidate must really have produced this child: compare call arguments */
+          if (kid)
+            gSplit(
+              raw.slice(raw.indexOf("(") + 1, raw.lastIndexOf(")")),
+            ).forEach((a, ai) => {
+              if (parts[ai] !== null) return
+              try {
+                if (
+                  JSON.stringify(gEval(info.ps, n.args, a)) !==
+                  JSON.stringify(kid.args[ai])
+                )
+                  bad = true
+              } catch (x) {}
+            })
+          if (!parts.some((p) => p !== null)) return kid ? lab(kid) : raw
+          /* nested call: keep it visible, e.g. ack(1, ack(2, 1)) */
+          return (
+            info.name +
+            "(" +
+            parts
+              .map((p, a) => (p !== null ? p : kid ? fmt(kid.args[a]) : "…"))
+              .join(", ") +
+            ")"
+          )
+        },
         (i) => fmt(n.args[i]),
       )
-      if (shown.calls !== kids.length) continue
+      if (bad || shown.calls !== kids.length) continue
       first = first || shown.text
       try {
         const calc = gSub(
@@ -1191,7 +1377,19 @@ function gLay() {
     n.call = lab(n)
     n.rv = fmtR(n.ret)
     n.ex = gExpand(n, info)
-    n.w = cardW(n.call, n.ex, n.rv)
+    const L = n.logs,
+      cut = (t) => (t.length > 70 ? t.slice(0, 69) + "…" : t)
+    n.lt = (
+      L.length > 4
+        ? [...L.slice(0, 3).map((l) => l.t), `… ${L.length - 3} more logs`]
+        : L.map((l) => l.t)
+    ).map((t) => "› " + cut(t))
+    n.lat =
+      L.length > 4
+        ? [...L.slice(0, 3), L[3]].map((l) => l.at)
+        : L.map((l) => l.at)
+    n.h = cardH(n.ex, n.lt.length)
+    n.w = cardW(n.call, n.ex, n.rv, n.lt)
   })
   const own = (n) => n.w + 14
   const S = (id) => {
@@ -1227,11 +1425,19 @@ function gLay() {
   return x
 }
 function gMk(total) {
-  const dmax = Math.max(...gN.map((n) => n.dep)),
-    w = total + 24,
-    h = (dmax + 1) * GH + 44,
+  /* rows are as tall as their tallest card (cards with console.log lines are taller) */
+  const rowH = []
+  gN.forEach((n) => (rowH[n.dep] = Math.max(rowH[n.dep] || 0, n.h)))
+  gRowY = []
+  let yy = 11
+  rowH.forEach((h, d) => {
+    gRowY[d] = yy + h / 2
+    yy += h + 42
+  })
+  const w = total + 24,
+    h = yy - 42 + 20,
     X = (n) => n.cx + 12,
-    Y = (n) => n.dep * GH + 40
+    Y = (n) => gRowY[n.dep]
   let s = ""
   const svg = $("gTree")
   svg.setAttribute("width", w)
@@ -1240,19 +1446,25 @@ function gMk(total) {
   gN.forEach((n) => {
     if (n.par >= 0) {
       const p = gN[n.par]
-      s += `<path class="ed" id="ge${n.id}" d="M${X(p)} ${Y(p) + CH / 2} C${X(p)} ${(Y(p) + Y(n)) / 2},${X(n)} ${(Y(p) + Y(n)) / 2},${X(n)} ${Y(n) - CH / 2}"/>`
+      s += `<path class="ed" id="ge${n.id}" d="M${X(p)} ${Y(p) + p.h / 2} C${X(p)} ${(Y(p) + p.h / 2 + Y(n) - n.h / 2) / 2},${X(n)} ${(Y(p) + p.h / 2 + Y(n) - n.h / 2) / 2},${X(n)} ${Y(n) - n.h / 2}"/>`
     }
   })
   gN.forEach((n) => {
     s += cardSvg(
       "gn" + n.id,
       "gv" + n.id,
-      n.call + (n.ex ? " = " + n.ex : "") + " = " + n.rv,
+      n.call +
+        (n.ex ? " = " + n.ex : "") +
+        n.lt.map((t) => "\n" + t).join("") +
+        " = " +
+        n.rv,
       X(n),
       Y(n),
       n.w,
       n.call,
       n.ex,
+      n.lt.length,
+      n.h,
     )
   })
   svg.innerHTML = s
@@ -1305,6 +1517,9 @@ function gShow() {
     if (e.t === "ret" && e.id === n.id) c += " pop"
     $("gn" + n.id).setAttribute("class", "nd " + c)
     $("gv" + n.id).textContent = done.has(n.id) ? "= " + n.rv : ""
+    n.lt.forEach((t, i) => {
+      $("gn" + n.id + "_l" + i).textContent = n.lat[i] <= gI ? t : ""
+    })
     const ed = $("ge" + n.id)
     if (ed)
       ed.setAttribute(
@@ -1318,7 +1533,7 @@ function gShow() {
       b = $("gTB")
     b.scrollTo({
       left: n.cx + 12 - b.clientWidth / 2,
-      top: n.dep * GH - b.clientHeight / 2 + 60,
+      top: gRowY[n.dep] - b.clientHeight / 2,
     })
   }
   let info
@@ -1431,7 +1646,13 @@ $("gLog").onclick = (e) => {
   if (d && !busy && !loop) gJump(+d.dataset.k)
 }
 $("gCall").onchange = () => {
-  if ((curP === "fact" || curP === "fib") && !busy && !loop && !gPlay) gRun()
+  if (
+    (curP === "fact" || curP === "fib" || curP === "ack") &&
+    !busy &&
+    !loop &&
+    !gPlay
+  )
+    gRun()
 }
 $("gCode").onkeydown = (e) => {
   if (e.key === "Tab") {
@@ -2418,7 +2639,7 @@ const KEYS = {
 }
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
-  if (devModal.classList.contains("open")) return
+  if (document.querySelector(".dev-modal.open")) return
   const t = e.target
   if (t.closest && t.closest("textarea,select,[contenteditable='true']")) return
   if (
@@ -2473,7 +2694,9 @@ function eqBar(bar) {
   if (!bar.offsetParent) return
   bar.classList.add("eqm")
   let h = 0
-  for (const c of bar.children) h = Math.max(h, c.offsetHeight)
+  for (const c of bar.children)
+    if (getComputedStyle(c).position !== "fixed")
+      h = Math.max(h, c.offsetHeight)
   bar.classList.remove("eqm")
   bar.style.setProperty("--bar-h", h + "px")
 }
@@ -2524,4 +2747,66 @@ if (document.fonts && document.fonts.ready)
   addEventListener("keydown", (e) => {
     if (e.key === "Escape" && open) set(open, false)
   })
+})()
+
+/* labels are text-less in the floating phone bar: keep them as tooltips / accessible names */
+document
+  .querySelectorAll(".bar > div.bgrp:first-of-type label")
+  .forEach((l) => {
+    const t = l.textContent.trim()
+    l.title = t
+    const i = l.querySelector("input")
+    if (i && t) i.setAttribute("aria-label", t)
+  })
+
+/* ===== phones: Variables popup, opened from the button in the bottom bar ===== */
+;(function () {
+  const root = document.documentElement,
+    isOpen = () => root.classList.contains("vars-open")
+  /* keep the popup right above the bar, whatever height the bar wraps to */
+  const place = () => {
+    const pg = document.querySelector(".pg.on"),
+      dock = pg && pg.querySelector(".bar > div.bgrp:first-of-type")
+    if (dock) root.style.setProperty("--dock-h", dock.offsetHeight + "px")
+  }
+  const set = (on) => {
+    if (on) place()
+    root.classList.toggle("vars-open", on)
+    document
+      .querySelectorAll(".vtog")
+      .forEach((b) => b.setAttribute("aria-expanded", on))
+  }
+  document.querySelectorAll(".vtog").forEach((b) => {
+    b.onclick = () => set(!isOpen())
+  })
+  /* tap anywhere outside the popup / button closes it */
+  document.addEventListener("click", (e) => {
+    if (isOpen() && !e.target.closest(".bar > div.bgrp:nth-of-type(2), .vtog"))
+      set(false)
+  })
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isOpen()) set(false)
+  })
+  addEventListener("resize", () => {
+    if (innerWidth > 800) set(false)
+    else if (isOpen()) place()
+  })
+  $("menuBtn").addEventListener("click", () => set(false))
+})()
+
+/* ===== phones: step counter sits at the top of the Variables box ===== */
+;(function () {
+  const mq = matchMedia("(max-width: 800px)"),
+    items = ["cnt", "bCnt", "gCnt", "hlCnt"].map((id) => {
+      const sp = $(id),
+        g = sp.closest(".bar").querySelector(":scope > div.bgrp:nth-of-type(2)")
+      sp.classList.add("scnt")
+      return { sp, g }
+    })
+  const apply = () =>
+    items.forEach(({ sp, g }) =>
+      mq.matches ? g.querySelector(".bgt").after(sp) : g.after(sp),
+    )
+  mq.addEventListener("change", apply)
+  apply()
 })()

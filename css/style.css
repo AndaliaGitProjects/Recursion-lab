@@ -1773,3 +1773,404 @@ html.has-fs,
 html.has-fs body {
   overflow: hidden;
 }
+
+/* ===== phones: Animation setting floats at the bottom of the screen ===== */
+@media (max-width: 800px) {
+  .bar > div.bgrp:first-of-type {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
+    min-height: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 7px 10px;
+    border-radius: 24px !important;
+    background: color-mix(in srgb, var(--rel) 9%, rgba(var(--panel-rgb), 0.9));
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.28),
+      0 2px 6px rgba(0, 0, 0, 0.12) !important;
+  }
+  .bar > div.bgrp:first-of-type .bgt {
+    display: none;
+  }
+  .bar > div.bgrp:first-of-type .bgr {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+  }
+  /* icon-only controls, 44px touch targets */
+  .bar > div.bgrp:first-of-type button {
+    font-size: 0;
+    gap: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 16px;
+  }
+  .bar > div.bgrp:first-of-type button .ic {
+    width: 20px;
+    height: 20px;
+  }
+  .bar > div.bgrp:first-of-type button.p {
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--rel) 40%, transparent);
+  }
+  .bar > div.bgrp:first-of-type label {
+    font-size: 0;
+    flex: 1 1 64px;
+    min-width: 56px;
+    gap: 0;
+  }
+  .bar > div.bgrp:first-of-type input[type="range"] {
+    width: 100%;
+    min-width: 0;
+  }
+  /* keep the last cards reachable above the floating bar */
+  .pg .grid {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+  /* full-screen call tree: keep the controls on top, leave room under the tree */
+  html.has-fs .bar > div.bgrp:first-of-type {
+    z-index: 1002;
+  }
+  .card.fs {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ===== dark mode: readable sidebar section titles ===== */
+:root[data-theme="dark"] #side .sec {
+  color: color-mix(in srgb, var(--txt) 92%, var(--rel));
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+:root[data-theme="dark"] #side .sec::before {
+  content: "";
+  flex: none;
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--rel);
+}
+
+/* ===== sidebar: readable lists at any Glass level, both themes ===== */
+#side {
+  /* never more see-through than 80%, so text keeps its contrast */
+  background: color-mix(
+    in srgb,
+    var(--rel) 8%,
+    rgba(var(--panel-rgb), max(var(--ga), 0.8))
+  );
+}
+@media (max-width: 800px) {
+  #side {
+    background: rgba(var(--panel-rgb), 0.97);
+  }
+}
+#side a {
+  color: var(--txt);
+  font-weight: 500;
+}
+#side a .ic {
+  color: color-mix(in srgb, var(--rel) 75%, var(--txt));
+}
+#side a:hover:not(.on) {
+  background: color-mix(in srgb, var(--rel) 14%, transparent);
+}
+#side a.on,
+#side a.on .ic,
+#side a.on .grip {
+  color: #fff;
+}
+#side a .grip {
+  opacity: 0.55;
+}
+#side .mbar button {
+  background: color-mix(in srgb, var(--txt) 9%, transparent);
+  border-color: color-mix(in srgb, var(--txt) 18%, transparent);
+  color: var(--txt);
+  font-weight: 500;
+}
+#side .mbar button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rel) 16%, transparent);
+  border-color: var(--rel);
+}
+#side #mDel {
+  color: color-mix(in srgb, var(--D) 85%, var(--txt));
+}
+#side .keys,
+#side .keys kbd {
+  color: color-mix(in srgb, var(--txt) 80%, transparent);
+}
+:root[data-theme="light"] #side .sec {
+  color: color-mix(in srgb, var(--txt) 70%, var(--rel));
+  font-weight: 700;
+}
+
+/* ===== sidebar: icon actions, collapsible sections ===== */
+#side .side-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#side .side-top .brand {
+  flex: 1;
+  min-width: 0;
+}
+#side .sbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex: none;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--txt) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--txt) 18%, transparent);
+  color: var(--txt);
+  cursor: pointer;
+}
+#side .sbtn:hover {
+  background: color-mix(in srgb, var(--rel) 18%, transparent);
+  border-color: var(--rel);
+}
+#side .sbtn .ic {
+  width: 16px;
+  height: 16px;
+}
+#side #addNew.on {
+  background: var(--rel);
+  border-color: var(--rel);
+  color: #fff;
+}
+#side #mDel {
+  color: color-mix(in srgb, var(--D) 85%, var(--txt));
+}
+#side .sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+#side .sec .st {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+#side .sec .st span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#side .sec .chev {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  transition: transform 0.2s;
+}
+#side .sec.shut .chev {
+  transform: rotate(-90deg);
+}
+#side .sacts {
+  display: flex;
+  gap: 5px;
+  flex: none;
+}
+#side .sbody {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.22s ease;
+}
+#side .sbody.shut {
+  grid-template-rows: 0fr;
+}
+#side .sbody > .sin {
+  overflow: hidden;
+  min-height: 0;
+}
+#side .empty {
+  padding: 6px 10px 8px;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--txt) 65%, transparent);
+}
+#side a span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.name-in {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 15px;
+}
+.name-err {
+  min-height: 18px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--D);
+}
+.name-acts {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* slider labels sit on top of their range bars */
+.bgrp label:has(> input[type="range"]) {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mut);
+}
+.bgrp label > input[type="range"] {
+  margin: 0;
+}
+@media (max-width: 800px) {
+  .bar > div.bgrp:first-of-type label:has(> input[type="range"]) {
+    font-size: 10.5px;
+    gap: 1px;
+    flex: 1 1 64px;
+    min-width: 56px;
+  }
+}
+
+/* ===== phones: Variables open in a popup from the button in the bottom bar ===== */
+.vtog {
+  display: none;
+}
+@media (max-width: 800px) {
+  .bar > div.bgrp:first-of-type .vtog {
+    display: inline-flex;
+    flex: none;
+    align-self: center;
+    position: relative;
+  }
+  .bar > div.bgrp:first-of-type .vtog[aria-expanded="true"] {
+    background: color-mix(in srgb, var(--rel) 24%, transparent);
+    border-color: var(--rel);
+    color: var(--rel);
+  }
+  /* red dot on the button when an input has an error */
+  .pg:has(#bErr:not(:empty), #gErr:not(:empty)) .vtog::after {
+    content: "";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--D);
+    box-shadow: 0 0 0 2px rgba(var(--panel-rgb), 0.95);
+  }
+
+  /* the Variables card becomes a popup that sits right above the bottom bar */
+  .bar > div.bgrp:nth-of-type(2) {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(
+      10px + env(safe-area-inset-bottom, 0px) + var(--dock-h, 58px) + 8px
+    );
+    z-index: 51;
+    min-height: 0;
+    max-height: 60dvh;
+    overflow-y: auto;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px 14px;
+    border-radius: 22px !important;
+    background: color-mix(in srgb, var(--rel) 9%, rgba(var(--panel-rgb), 0.96));
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.28),
+      0 2px 6px rgba(0, 0, 0, 0.12) !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(10px) scale(0.97);
+    transform-origin: bottom right;
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease,
+      visibility 0s linear 0.18s;
+  }
+  html.vars-open .bar > div.bgrp:nth-of-type(2) {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    transition-delay: 0s;
+  }
+  html.has-fs .bar > div.bgrp:nth-of-type(2) {
+    z-index: 1003;
+  }
+  .bar > div.bgrp:nth-of-type(2) .bgr {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+  .bar > div.bgrp:nth-of-type(2) label {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 12px;
+  }
+  .bar > div.bgrp:nth-of-type(2) label input {
+    flex: 1 1 auto;
+    width: auto !important;
+    min-width: 0;
+    max-width: none !important;
+  }
+  .bar > div.bgrp:nth-of-type(2) label input[type="number"] {
+    flex: 0 0 96px;
+    margin-left: auto;
+  }
+}
+
+/* step counter lives at the top of the Variables box on phones (JS moves it) */
+.bgrp > .scnt {
+  display: block;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-bd);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+.bgrp > .scnt:empty {
+  display: none;
+}
