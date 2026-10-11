@@ -2884,26 +2884,49 @@ document
   }
 
   /* hard: look for the visitor in the repo's public stargazers list */
-  async function hasStarred(login) {
+  async function viaGitHub(login) {
     const want = login.toLowerCase()
     for (let page = 1; page <= 30; page++) {
+      /* plain GET, no custom headers/options => no CORS preflight in any browser;
+         the cache-buster keeps GitHub's 60 s cache from hiding a fresh star */
       const r = await fetch(
         "https://api.github.com/repos/" +
           C.repo +
           "/stargazers?per_page=100&page=" +
-          page,
-        {
-          headers: { Accept: "application/vnd.github+json" },
-          cache: "no-cache",
-        },
+          page +
+          "&_=" +
+          Date.now(),
       )
       if (r.status === 403 || r.status === 429) throw new Error("rate")
-      if (!r.ok) throw new Error("net")
+      if (!r.ok) throw new Error("http " + r.status)
       const list = await r.json()
       if (list.some((u) => u.login.toLowerCase() === want)) return true
       if (list.length < 100) return false
     }
     return false
+  }
+  /* 1st choice: our own /api/check-star (Vercel) - no CORS, no browser-extension
+     or network interference, no per-visitor rate limit.
+     2nd choice: ask GitHub directly (works on any static host). */
+  async function viaServer(login) {
+    const r = await fetch("api/check-star?user=" + encodeURIComponent(login), {
+      cache: "no-store",
+    })
+    if (!r.ok) throw new Error("srv " + r.status)
+    const j = await r.json()
+    if (typeof j.starred !== "boolean") throw new Error("srv shape")
+    return j.starred
+  }
+  async function hasStarred(login) {
+    try {
+      return await viaServer(login)
+    } catch (e) {
+      console.warn(
+        "Star check: server route unavailable, asking GitHub directly.",
+        e,
+      )
+      return viaGitHub(login)
+    }
   }
   $("starForm").onsubmit = async (e) => {
     e.preventDefault()
@@ -2919,10 +2942,19 @@ document
     try {
       ok = await hasStarred(u)
     } catch (x) {
+      console.error("Star check failed:", x)
       err.textContent =
         x.message === "rate"
           ? "GitHub is limiting requests right now. Please try again in a minute."
-          : "Couldn't reach GitHub. Check your connection and try again."
+          : x.message === "http 401"
+            ? "GitHub rejected the request (401). A browser extension, VPN or network may be adding a bad login. Try a private window, another browser, or another network."
+            : /^http /.test(x.message)
+              ? "GitHub answered with an error (" +
+                x.message.slice(5) +
+                "). Please try again in a moment."
+              : "Couldn't reach GitHub (" +
+                (x.message || "network error") +
+                "). Check your connection and try again."
       ok = null
     }
     go.disabled = user.disabled = false
