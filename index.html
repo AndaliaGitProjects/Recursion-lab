@@ -39,26 +39,6 @@
         } catch (e) {}
       })()
     </script>
-    <script>
-      /* Star prompt settings.
-         mode: "hard" = visitors must star the repo (and verify their GitHub
-               username) before they can enter
-               "soft" = polite, dismissible reminder
-               "off"  = nothing */
-      window.RL_STAR = {
-        repo: "AndaliaGitProjects/Recursion-lab",
-        mode: "hard",
-      }
-      ;(function () {
-        if (window.RL_STAR.mode !== "hard") return
-        var ok = false
-        try {
-          ok =
-            JSON.parse(localStorage.getItem("rl_star") || "{}").s === "verified"
-        } catch (e) {}
-        if (!ok) document.documentElement.classList.add("star-lock")
-      })()
-    </script>
   </head>
   <body>
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
@@ -193,11 +173,6 @@
         </symbol>
         <symbol id="i-chev" viewBox="0 0 24 24">
           <path d="M6 9l6 6 6-6" />
-        </symbol>
-        <symbol id="i-star" viewBox="0 0 24 24">
-          <path
-            d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8z"
-          />
         </symbol>
         <symbol id="i-sliders" viewBox="0 0 24 24">
           <path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0" />
@@ -429,62 +404,6 @@
           <p>Recursion Lab</p>
         </div>
       </div>
-    </div>
-
-    <div id="starModal" class="dev-modal" aria-hidden="true">
-      <form
-        id="starForm"
-        class="dev-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="starTitle"
-        autocomplete="off"
-      >
-        <div class="dev-head">
-          <svg class="ic ic-lg"><use href="#i-star" /></svg>
-          <h2 id="starTitle">Support Recursion Lab</h2>
-          <button
-            id="starClose"
-            class="dev-close"
-            type="button"
-            aria-label="Close"
-          >
-            <svg class="ic"><use href="#i-x" /></svg>
-          </button>
-        </div>
-        <div class="dev-body star-body">
-          <p id="starMsg"></p>
-          <a
-            id="starLink"
-            class="star-link"
-            href="https://github.com/AndaliaGitProjects/Recursion-lab"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <svg class="ic"><use href="#i-star" /></svg> Star on GitHub
-          </a>
-          <div id="starVerify" hidden>
-            <input
-              id="starUser"
-              class="name-in"
-              type="text"
-              maxlength="40"
-              spellcheck="false"
-              autocapitalize="off"
-              autocorrect="off"
-              placeholder="Your GitHub username"
-              aria-label="Your GitHub username"
-            />
-            <div id="starErr" class="name-err" role="alert"></div>
-            <button id="starGo" type="submit" class="p">
-              I starred it – enter
-            </button>
-          </div>
-          <button id="starLater" class="star-later" type="button">
-            Maybe later
-          </button>
-        </div>
-      </form>
     </div>
 
     <main>
@@ -851,6 +770,5 @@
       </section>
     </main>
     <script src="js/main.js"></script>
-    <script src="js/stars.js"></script>
   </body>
 </html>
