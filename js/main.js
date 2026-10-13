@@ -2781,8 +2781,7 @@ document
   })
   /* tap anywhere outside the popup / button closes it */
   document.addEventListener("click", (e) => {
-    if (isOpen() && !e.target.closest(".bar > div.bgrp:nth-of-type(2), .vtog"))
-      set(false)
+    if (isOpen() && !e.target.closest(".vpop, .vtog")) set(false)
   })
   addEventListener("keydown", (e) => {
     if (e.key === "Escape" && isOpen()) set(false)
@@ -2794,19 +2793,27 @@ document
   $("menuBtn").addEventListener("click", () => set(false))
 })()
 
-/* ===== phones: step counter sits at the top of the Variables box ===== */
+/* ===== phones: the step counter and Variables are two separate cards, stacked in the popup ===== */
 ;(function () {
   const mq = matchMedia("(max-width: 800px)"),
     items = ["cnt", "bCnt", "gCnt", "hlCnt"].map((id) => {
       const sp = $(id),
-        g = sp.closest(".bar").querySelector(":scope > div.bgrp:nth-of-type(2)")
+        bar = sp.closest(".bar"),
+        g = bar.querySelector(":scope > div.bgrp:nth-of-type(2)"),
+        pop = document.createElement("div")
+      pop.className = "vpop"
+      bar.appendChild(pop)
       sp.classList.add("scnt")
-      return { sp, g }
+      return { sp, g, pop }
     })
   const apply = () =>
-    items.forEach(({ sp, g }) =>
-      mq.matches ? g.querySelector(".bgt").after(sp) : g.after(sp),
-    )
+    items.forEach(({ sp, g, pop }) => {
+      if (mq.matches) pop.append(sp, g)
+      else {
+        pop.before(g)
+        g.after(sp)
+      }
+    })
   mq.addEventListener("change", apply)
   apply()
 })()

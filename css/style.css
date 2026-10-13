@@ -1591,7 +1591,7 @@ html[data-boot="gen"] #pg-gen {
   -webkit-backdrop-filter: blur(16px) saturate(1.3);
   border: 1px solid var(--bd);
   box-shadow: var(--shadow); /* outer shadow only, no inset */
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   min-height: var(--bar-h, 0px);
 }
 .bar h1 {
@@ -1622,7 +1622,6 @@ html[data-boot="gen"] #pg-gen {
 @supports (corner-shape: squircle) {
   html[data-corner="squircle"] :is(.bar h1, .bgrp, .bar > span:not(:empty)) {
     corner-shape: squircle;
-    border-radius: 26px;
   }
 }
 /* tablets: title gets its own full row, groups share the next rows evenly */
@@ -1678,7 +1677,7 @@ html[data-boot="gen"] #pg-gen {
 .bgrp :is(button, input:not([type="range"])) {
   height: 36px;
   padding: 0 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--chip-bg);
   border: 1px solid var(--chip-bd);
   box-shadow: none;
@@ -1787,7 +1786,7 @@ html.has-fs body {
     flex-wrap: wrap;
     justify-content: center;
     padding: 7px 10px;
-    border-radius: 24px !important;
+    border-radius: var(--r-lg) !important;
     background: color-mix(in srgb, var(--rel) 9%, rgba(var(--panel-rgb), 0.9));
     backdrop-filter: blur(18px) saturate(1.5);
     -webkit-backdrop-filter: blur(18px) saturate(1.5);
@@ -1812,7 +1811,7 @@ html.has-fs body {
     height: 44px;
     padding: 0;
     justify-content: center;
-    border-radius: 16px;
+    border-radius: var(--r-md);
   }
   .bar > div.bgrp:first-of-type button .ic {
     width: 20px;
@@ -1935,7 +1934,7 @@ html.has-fs body {
   height: 28px;
   padding: 0;
   flex: none;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background: color-mix(in srgb, var(--txt) 9%, transparent);
   border: 1px solid color-mix(in srgb, var(--txt) 18%, transparent);
   color: var(--txt);
@@ -2093,8 +2092,8 @@ html.has-fs body {
     box-shadow: 0 0 0 2px rgba(var(--panel-rgb), 0.95);
   }
 
-  /* the Variables card becomes a popup that sits right above the bottom bar */
-  .bar > div.bgrp:nth-of-type(2) {
+  /* popup: a transparent column holding two separate cards (step counter, Variables) */
+  .vpop {
     position: fixed;
     left: 10px;
     right: 10px;
@@ -2102,19 +2101,11 @@ html.has-fs body {
       10px + env(safe-area-inset-bottom, 0px) + var(--dock-h, 58px) + 8px
     );
     z-index: 51;
-    min-height: 0;
-    max-height: 60dvh;
-    overflow-y: auto;
+    display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 12px 14px 14px;
-    border-radius: 22px !important;
-    background: color-mix(in srgb, var(--rel) 9%, rgba(var(--panel-rgb), 0.96));
-    backdrop-filter: blur(18px) saturate(1.5);
-    -webkit-backdrop-filter: blur(18px) saturate(1.5);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.28),
-      0 2px 6px rgba(0, 0, 0, 0.12) !important;
+    max-height: 60dvh;
+    overflow-y: auto;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -2125,54 +2116,80 @@ html.has-fs body {
       transform 0.18s ease,
       visibility 0s linear 0.18s;
   }
-  html.vars-open .bar > div.bgrp:nth-of-type(2) {
+  html.vars-open .vpop {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
     transform: none;
     transition-delay: 0s;
   }
-  html.has-fs .bar > div.bgrp:nth-of-type(2) {
+  html.has-fs .vpop {
     z-index: 1003;
   }
-  .bar > div.bgrp:nth-of-type(2) .bgr {
+  .vpop > .bgrp,
+  .vpop > .scnt {
+    flex: none;
+    min-height: 0;
+    margin: 0;
+    border-radius: var(--r-lg) !important;
+    border: 1px solid var(--bd);
+    background: color-mix(in srgb, var(--rel) 9%, rgba(var(--panel-rgb), 0.96));
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.28),
+      0 2px 6px rgba(0, 0, 0, 0.12) !important;
+  }
+  .vpop > .bgrp {
+    padding: 12px 14px 14px;
+    gap: 10px;
+  }
+  .vpop > .scnt {
+    display: block;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+    white-space: normal;
+    min-width: 0;
+  }
+  .vpop > .scnt:empty {
+    display: none;
+  }
+  .vpop .bgr {
     flex-direction: column;
     align-items: stretch;
     flex-wrap: nowrap;
     gap: 10px;
   }
-  .bar > div.bgrp:nth-of-type(2) label {
+  .vpop label {
     display: flex;
     width: 100%;
     align-items: center;
     gap: 12px;
   }
-  .bar > div.bgrp:nth-of-type(2) label input {
+  .vpop label input {
     flex: 1 1 auto;
     width: auto !important;
     min-width: 0;
     max-width: none !important;
   }
-  .bar > div.bgrp:nth-of-type(2) label input[type="number"] {
+  .vpop label input[type="number"] {
     flex: 0 0 96px;
     margin-left: auto;
   }
 }
-
-/* step counter lives at the top of the Variables box on phones (JS moves it) */
-.bgrp > .scnt {
-  display: block;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-bd);
-  font-size: 13.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: left;
-}
-.bgrp > .scnt:empty {
+.vpop:empty,
+.vpop {
   display: none;
+}
+@media (max-width: 800px) {
+  .vpop {
+    display: flex;
+  }
+}
+.scnt {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ===== star prompt ===== */
@@ -2194,7 +2211,7 @@ html.has-fs body {
   justify-content: center;
   gap: 8px;
   padding: 11px 16px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--rel);
   color: #fff;
   font-weight: 600;
@@ -2232,8 +2249,16 @@ html.star-lock body > :not(#starModal) {
   width: 100%;
   padding: 11px 16px;
   font-weight: 600;
-  border-radius: 14px;
+  border-radius: var(--r-md);
 }
 #starGo:disabled {
   opacity: 0.7;
+}
+
+/* squircle corners on the new popup cards, step counter and icon buttons */
+@supports (corner-shape: squircle) {
+  html[data-corner="squircle"]
+    :is(.vpop > .bgrp, .vpop > .scnt, .sbtn, .star-link, #starGo) {
+    corner-shape: squircle;
+  }
 }
