@@ -8,7 +8,26 @@
     />
     <title>Recursion Lab</title>
     <link rel="stylesheet" href="css/style.css" />
-    <link rel="icon" type="image/x-icon" href="gemini-svg.svg" />
+    <link rel="icon" type="image/x-icon" href="icon.svg" />
+    <!-- Vercel Web Analytics -->
+    <script>
+      window.va =
+        window.va ||
+        function () {
+          ;(window.vaq = window.vaq || []).push(arguments)
+        }
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+
+    <!-- Vercel Speed Insights -->
+    <script>
+      window.si =
+        window.si ||
+        function () {
+          ;(window.siq = window.siq || []).push(arguments)
+        }
+    </script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
     <script>
       /* Apply saved theme / corner / accent / glass / page BEFORE first paint
          (prevents the light/dark/accent flash on refresh). */
@@ -173,6 +192,16 @@
         </symbol>
         <symbol id="i-chev" viewBox="0 0 24 24">
           <path d="M6 9l6 6 6-6" />
+        </symbol>
+        <symbol id="i-github" viewBox="0 0 24 24">
+          <path
+            d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"
+          />
+        </symbol>
+        <symbol id="i-star" viewBox="0 0 24 24">
+          <path
+            d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"
+          />
         </symbol>
         <symbol id="i-sliders" viewBox="0 0 24 24">
           <path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0" />
@@ -398,10 +427,21 @@
           </button>
         </div>
         <div class="dev-body">
-          <svg class="dev-icon"><use href="#i-logo" /></svg>
-          <p>جميع الحقوق محفوظة للمطور</p>
           <strong>Eng. Alhussin Rastanawi</strong>
-          <p>Recursion Lab</p>
+          <p class="star-note">
+            Support me by starring the project on GitHub
+            <svg class="ic" style="color: var(--act)">
+              <use href="#i-star" />
+            </svg>
+          </p>
+          <a
+            class="star-link"
+            href="https://github.com/AndaliaGitProjects/Recursion-lab"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg class="ic"><use href="#i-github" /></svg> Star on GitHub
+          </a>
         </div>
       </div>
     </div>

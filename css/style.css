@@ -2262,3 +2262,39 @@ html.star-lock body > :not(#starModal) {
     corner-shape: squircle;
   }
 }
+
+/* ===== GitHub link (sidebar) + star request (developer dialog) ===== */
+#aboutDev {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gh-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  color: var(--mut);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.gh-link:hover {
+  background: var(--field);
+  color: var(--txt);
+  border-color: var(--bd);
+}
+.gh-link .ic {
+  color: var(--rel);
+}
+.dev-body .star-note {
+  margin-top: 14px;
+  color: var(--txt);
+  font-weight: 500;
+}
+.dev-body .star-link {
+  margin-top: 8px;
+}
+.locked #side a.gh-link {
+  pointer-events: auto;
+}

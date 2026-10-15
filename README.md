@@ -8,15 +8,15 @@ Plain HTML, CSS and JavaScript. No build step, no dependencies, no server.
 
 ## Algorithms
 
-| Algorithm | What you see |
-| --- | --- |
+| Algorithm          | What you see                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
 | **Tower of Hanoi** | Disks moving between pegs, with the role of each peg (source / temp / destination) for the current call |
-| **Binary Search** | The search range shrinking on a sorted array (low / mid / high) |
-| **Factorial** | The stack growing to depth *n*, then results returning |
-| **Fibonacci** | The branching call tree, with repeated calls highlighted |
-| **Ackermann** | A deeply nested call tree and call statistics |
-| **Hilbert Curve** | The curve being drawn square by square, with a position scrubber |
-| **My algorithms** | Write your own JavaScript function, trace it, and save it |
+| **Binary Search**  | The search range shrinking on a sorted array (low / mid / high)                                         |
+| **Factorial**      | The stack growing to depth _n_, then results returning                                                  |
+| **Fibonacci**      | The branching call tree, with repeated calls highlighted                                                |
+| **Ackermann**      | A deeply nested call tree and call statistics                                                           |
+| **Hilbert Curve**  | The curve being drawn square by square, with a position scrubber                                        |
+| **My algorithms**  | Write your own JavaScript function, trace it, and save it                                               |
 
 ## Features
 
@@ -47,8 +47,8 @@ python -m http.server 8000   # then visit http://localhost:8000
 
    ```js
    function power(b, e) {
-     if (e === 0) return 1;
-     return b * power(b, e - 1);
+     if (e === 0) return 1
+     return b * power(b, e - 1)
    }
    ```
 

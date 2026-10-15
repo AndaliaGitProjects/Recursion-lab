@@ -738,6 +738,7 @@ $("side").onclick = (e) => {
     return
   }
   const a = e.target.closest("a")
+  if (a && a.id === "ghLink") return
   if (a) {
     if (a.dataset.p !== curP || curP === "new") showPage(a.dataset.p)
     if (window.innerWidth <= 800) sideSet(false)
@@ -790,6 +791,7 @@ $("side").addEventListener("dblclick", (e) => {
   const a = e.target.closest("a")
   if (
     !a ||
+    a.id === "ghLink" ||
     a.dataset.p === "new" ||
     sLocked() ||
     e.target.closest(".x,.grip,input")
@@ -2621,6 +2623,13 @@ function closeDevModal() {
   devModal.setAttribute("aria-hidden", "true")
   devInfo.focus()
 }
+/* first visit: show the developer dialog once (with the GitHub star request) */
+try {
+  if (!localStorage.getItem("rl_dev_seen")) {
+    localStorage.setItem("rl_dev_seen", "1")
+    setTimeout(openDevModal, 600)
+  }
+} catch (e) {}
 devInfo.onclick = openDevModal
 devClose.onclick = closeDevModal
 devModal.addEventListener("click", (e) => {
